@@ -15,20 +15,16 @@
 }:
 
 let
-  # Define tool lists
-  generalTools = with pkgs; [
-    tree
-    bat
-    bottom
-    jq
-  ];
+  # Import organizational standard tools
+  standardTools = import ./lib/standard-tools.nix { inherit pkgs; };
 
+  # Use organizational standard tools
+  generalTools = standardTools.generalTools;
+
+  # C#-specific build tools (in addition to standard tools)
   buildTools = [
     sdk
-    pkgs.fastfetch
-    pkgs.tree
-    pkgs.figlet
-  ];
+  ] ++ standardTools.commonBuildTools;
 
   # Add .NET runtime packages for self-contained builds
   dotnetRuntimePackages = with pkgs; [

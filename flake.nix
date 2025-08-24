@@ -25,6 +25,12 @@
         # Expose language helpers globally (not per-system)
         lib = {
           csharp = import ./csharp.nix { inherit nixpkgs; };
+          rust = import ./rust.nix { inherit nixpkgs; };
+          
+          # Also expose standard tools for direct use
+          standardTools = system: import ./lib/standard-tools.nix { 
+            pkgs = import nixpkgs { inherit system; };
+          };
         };
       };
 }
