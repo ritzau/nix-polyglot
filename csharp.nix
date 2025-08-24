@@ -7,10 +7,6 @@
   # Optional customizations
   extraBuildTools ? [],
   extraGeneralTools ? [],
-  shellHook ? null,
-  buildPhase ? null,
-  installPhase ? null,
-  shell ? "zsh",
   sdk ? pkgs.dotnet-sdk_8
 }:
 
@@ -36,20 +32,9 @@ let
   allBuildTools = buildTools ++ dotnetRuntimePackages ++ extraBuildTools;
   allGeneralTools = generalTools ++ extraGeneralTools;
 
-  # Choose shell
-  shellPkg = if shell == "zsh" then pkgs.zsh else pkgs.bash;
-  shellPath = "${shellPkg}/bin/${shell}";
-
-  # Handle null shellHook and shell setup
-  finalShellHook = if shellHook == null
-    then ''
-      export SHELL=${shellPath}
-      echo "C# Development Environment Ready! (using ${shell})"
-    ''
-    else ''
-      export SHELL=${shellPath}
-      ${shellHook}
-    '';
+  shellHook = ''
+    echo "C# Development Environment Ready!"
+  '';
 
   # Find .csproj file
   csprojFiles = builtins.filter
@@ -96,8 +81,8 @@ let
 in
 {
   devShell = pkgs.mkShell {
-    packages = allGeneralTools ++ allBuildTools ++ [ shellPkg ];
-    shellHook = finalShellHook;
+    packages = allGeneralTools ++ allBuildTools;
+    inherit shellHook;
   };
 
   package = package;

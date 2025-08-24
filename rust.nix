@@ -9,10 +9,6 @@
   # Optional customizations
   extraBuildTools ? [],
   extraGeneralTools ? [],
-  shellHook ? null,
-  buildPhase ? null,
-  installPhase ? null,
-  shell ? "zsh",
   rustc ? pkgs.rustc,
   cargo ? pkgs.cargo,
   # Binary name - if not provided, will try to extract from Cargo.toml
@@ -43,21 +39,10 @@ let
   allBuildTools = buildTools ++ rustDevTools ++ extraBuildTools;
   allGeneralTools = generalTools ++ extraGeneralTools;
 
-  # Choose shell
-  shellPkg = if shell == "zsh" then pkgs.zsh else pkgs.bash;
-  shellPath = "${shellPkg}/bin/${shell}";
-
-  # Handle null shellHook and shell setup
-  finalShellHook = if shellHook == null
-    then ''
-      export SHELL=${shellPath}
-      echo "Rust Development Environment Ready! (using ${shell})"
-      echo "Available tools: cargo, clippy, rustfmt, rust-analyzer"
-    ''
-    else ''
-      export SHELL=${shellPath}
-      ${shellHook}
-    '';
+  shellHook = ''
+    echo "Rust Development Environment Ready!"
+    echo "Available tools: cargo, clippy, rustfmt, rust-analyzer"
+  '';
 
   # Find Cargo.toml file
   cargoFiles = builtins.filter
@@ -103,28 +88,24 @@ let
         fi
       '';
 
-      preBuild = if buildPhase == null then ''
+      preBuild = ''
         echo
         echo Building
         echo ========
-      '' else null;
+      '';
 
-      preInstall = if installPhase == null then ''
+      preInstall = ''
         echo  
         echo Installing
         echo ==========
-      '' else null;
-
-      # Allow custom build/install phases
-      buildPhase = buildPhase;
-      installPhase = installPhase;
+      '';
     };
 
 in
 {
   devShell = pkgs.mkShell {
-    packages = allGeneralTools ++ allBuildTools ++ [ shellPkg ];
-    shellHook = finalShellHook;
+    packages = allGeneralTools ++ allBuildTools;
+    inherit shellHook;
   };
 
   package = package;
