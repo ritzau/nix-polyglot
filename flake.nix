@@ -24,7 +24,7 @@
       }) // {
         # Expose language helpers globally (not per-system)
         lib = {
-          csharp = import ./csharp.nix { inherit nixpkgs flake-utils; };
+          csharp = import ./csharp.nix { inherit nixpkgs; };
         };
       };
 }
