@@ -22,14 +22,8 @@ let
     sdk
   ] ++ standardTools.commonBuildTools;
 
-  # Add .NET runtime packages for self-contained builds
-  dotnetRuntimePackages = with pkgs; [
-    dotnet-runtime_8
-    dotnet-aspnetcore_8
-  ];
-
   # Combine with user extras
-  allBuildTools = buildTools ++ dotnetRuntimePackages ++ extraBuildTools;
+  allBuildTools = buildTools ++ extraBuildTools;
   allGeneralTools = generalTools ++ extraGeneralTools;
 
   shellHook = ''
