@@ -27,8 +27,11 @@
           csharp = import ./csharp.nix { inherit nixpkgs; };
           rust = import ./rust.nix { inherit nixpkgs; };
           
-          # Also expose standard tools for direct use
+          # Also expose standard tools and hooks for direct use
           standardTools = system: import ./lib/standard-tools.nix { 
+            pkgs = import nixpkgs { inherit system; };
+          };
+          buildHooks = system: import ./lib/build-hooks.nix { 
             pkgs = import nixpkgs { inherit system; };
           };
         };

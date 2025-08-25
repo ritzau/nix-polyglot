@@ -7,12 +7,18 @@
   # Optional customizations
   extraBuildTools ? [],
   extraGeneralTools ? [],
-  sdk ? pkgs.dotnet-sdk_8
+  sdk ? pkgs.dotnet-sdk_8,
+  # Build target - path to .csproj or .sln file (relative to src root)
+  buildTarget,
+  # NuGet dependencies and build options
+  nugetDeps ? null,
+  selfContainedBuild ? true
 }:
 
 let
-  # Import organizational standard tools
+  # Import organizational standard tools and hooks
   standardTools = import ./lib/standard-tools.nix { inherit pkgs; };
+  buildHooks = import ./lib/build-hooks.nix { inherit pkgs; };
 
   # Use organizational standard tools
   generalTools = standardTools.generalTools;
@@ -27,50 +33,32 @@ let
   allGeneralTools = generalTools ++ extraGeneralTools;
 
   shellHook = ''
-    echo "C# Development Environment Ready!"
+    echo "🚀 C# Development Environment Ready!"
   '';
 
-  # Find .csproj file
-  csprojFiles = builtins.filter
-    (file: nixpkgs.lib.hasSuffix ".csproj" file)
-    (builtins.attrNames (builtins.readDir self));
-
-  name = if builtins.length csprojFiles == 1
-    then nixpkgs.lib.removeSuffix ".csproj" (builtins.head csprojFiles)
-    else throw "Expected exactly one .csproj file in root, found: ${builtins.toString (builtins.length csprojFiles)}";
+  # Derive name from the build target file - remove extension if present
+  baseName = builtins.baseNameOf buildTarget;
+  name = if nixpkgs.lib.hasSuffix ".csproj" baseName then
+    nixpkgs.lib.removeSuffix ".csproj" baseName
+  else if nixpkgs.lib.hasSuffix ".sln" baseName then
+    nixpkgs.lib.removeSuffix ".sln" baseName
+  else
+    baseName;
 
   # Build the package using buildDotnetModule for proper NuGet handling
   package = pkgs.buildDotnetModule {
     inherit name;
     src = self;
 
-    projectFile = "${name}.csproj";
+    projectFile = buildTarget;
     dotnet-sdk = sdk;
-    # nugetDeps = null; # Try without nugetDeps first
-    selfContainedBuild = true;
+    inherit nugetDeps selfContainedBuild;
 
     buildInputs = [ pkgs.fastfetch ];
 
-    preUnpack = ''
-      echo
-      echo System Info
-      echo ===========
-      fastfetch
-      echo -n "Dotnet version: "
-      dotnet --version
-    '';
-
-    preBuild = ''
-      echo
-      echo Building
-      echo ========
-    '';
-
-    preInstall = ''
-      echo
-      echo Installing
-      echo ==========
-    '';
+    preUnpack = buildHooks.systemInfoHook + buildHooks.versionHook { command = "dotnet --version"; label = "Dotnet version"; };
+    preBuild = buildHooks.buildPhaseHook;
+    preInstall = buildHooks.installPhaseHook;
   };
 
 in
