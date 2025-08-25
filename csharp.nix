@@ -45,6 +45,7 @@ let
     src = self;
 
     projectFile = "${name}.csproj";
+    dotnet-sdk = sdk;
     # nugetDeps = null; # Try without nugetDeps first
     selfContainedBuild = true;
 
