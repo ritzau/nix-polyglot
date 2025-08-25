@@ -65,9 +65,20 @@ let
   };
 
   # Auto-detect test projects if enableTests is true
-  hasTests = enableTests && (testProject != null || builtins.pathExists (self + "/tests") || nixpkgs.lib.hasSuffix ".sln" buildTarget);
+  # Support both common patterns: /tests directory and /ProjectName.Tests directory
+  hasTests = enableTests && (
+    testProject != null || 
+    builtins.pathExists (self + "/tests") || 
+    builtins.pathExists (self + "/${name}.Tests") ||
+    nixpkgs.lib.hasSuffix ".sln" buildTarget
+  );
 
   # Create test check if tests are detected
+  # Supports multiple test project patterns:
+  # 1. Explicit testProject parameter
+  # 2. tests/ directory (legacy/common)
+  # 3. ProjectName.Tests/ directory (.NET best practice)
+  # 4. Solution file with test projects
   testCheck = if hasTests then
     pkgs.writeShellApplication {
       name = "${name}-tests";
@@ -80,11 +91,21 @@ let
         if [ -n "${if testProject != null then testProject else ""}" ]; then
           echo "Running explicit test project: ${if testProject != null then testProject else ""}"
           dotnet test "${if testProject != null then testProject else ""}" --logger "console;verbosity=detailed"
-        # If tests directory exists
+        # If tests directory exists (common pattern)
         elif [ -d "tests" ]; then
           echo "Running tests from tests/ directory..."
           # Find test projects in tests directory
           for test_proj in tests/*.csproj tests/*/*.csproj; do
+            if [ -f "$test_proj" ]; then
+              echo "Running test project: $test_proj"
+              dotnet test "$test_proj" --logger "console;verbosity=detailed"
+            fi
+          done
+        # If ProjectName.Tests directory exists (.NET best practice)
+        elif [ -d "${name}.Tests" ]; then
+          echo "Running tests from ${name}.Tests/ directory..."
+          # Find test projects in ProjectName.Tests directory  
+          for test_proj in "${name}.Tests"/*.csproj; do
             if [ -f "$test_proj" ]; then
               echo "Running test project: $test_proj"
               dotnet test "$test_proj" --logger "console;verbosity=detailed"
