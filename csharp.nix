@@ -112,7 +112,7 @@ let
             fi
           done
         # If solution file, run all tests in solution
-        elif [[ "${buildTarget}" == *.sln ]]; then
+        elif [ "''${buildTarget##*.}" = "sln" ]; then
           echo "Running all tests in solution: ${buildTarget}"
           dotnet test "${buildTarget}" --logger "console;verbosity=detailed"
         else
