@@ -16,8 +16,9 @@
 }:
 
 let
-  # Import organizational standard tools
+  # Import organizational standard tools and build hooks
   standardTools = import ./lib/standard-tools.nix { inherit pkgs; };
+  buildHooks = import ./lib/build-hooks.nix { inherit pkgs; };
 
   # Use organizational standard tools
   generalTools = standardTools.generalTools;
@@ -51,55 +52,84 @@ let
 
   hasCargoToml = builtins.length cargoFiles == 1;
   
-  # Extract package name from Cargo.toml if possible, otherwise use directory name
-  # For now, we'll use a simple approach and let buildRustPackage handle it
-  name = if hasCargoToml 
-    then "rust-project"  # buildRustPackage will extract the real name
+  # Parse Cargo.toml to extract package information
+  cargoToml = if hasCargoToml
+    then builtins.fromTOML (builtins.readFile (self + "/Cargo.toml"))
     else throw "No Cargo.toml found in project root";
+  
+  # Extract package name and version from Cargo.toml
+  packageName = cargoToml.package.name or "rust-project";
+  packageVersion = cargoToml.package.version or "0.1.0";
+  
+  # Determine binary name - use provided binaryName, or first [[bin]] entry, or package name
+  detectedBinaryName = 
+    if binaryName != null then binaryName
+    else if cargoToml ? bin && builtins.length cargoToml.bin > 0
+    then (builtins.head cargoToml.bin).name
+    else packageName;
+  
+  # Check if tests are present in the project
+  hasTests = 
+    let 
+      srcFiles = builtins.attrNames (builtins.readDir (self + "/src"));
+      hasLibRs = builtins.elem "lib.rs" srcFiles;
+      hasTestsDir = builtins.pathExists (self + "/tests");
+      hasDocTests = hasLibRs; # Assume lib.rs has doc tests
+    in hasTestsDir || hasDocTests || (cargoToml ? dev-dependencies);
 
   # Build the package using buildRustPackage for proper Cargo handling
   package = if cargoHash == null 
     then throw "cargoHash is required for Rust builds. Generate it with: nix-prefetch-url --unpack <cargo-vendor-tarball>"
     else pkgs.rustPlatform.buildRustPackage {
-      pname = "rust-project";
-      version = "0.1.0";
+      pname = packageName;
+      version = packageVersion;
       src = self;
       
       inherit cargoHash;
       
-      nativeBuildInputs = [ pkgs.fastfetch ];
+      nativeBuildInputs = with pkgs; [ fastfetch ];
       
-      preUnpack = ''
+      # Enable tests if they exist
+      doCheck = hasTests;
+      
+      # Additional check phase configuration for tests
+      checkPhase = if hasTests then ''
         echo
-        echo System Info  
-        echo ===========
-        if command -v fastfetch >/dev/null 2>&1; then
-          fastfetch
-        else
-          echo "System info tools not available in this phase"
-        fi
-        if command -v rustc >/dev/null 2>&1; then
-          echo -n "Rust version: "
-          rustc --version
-          echo -n "Cargo version: "
-          cargo --version
-        else
-          echo "Rust toolchain info not available in this phase"
-        fi
+        echo Testing
+        echo =======
+        cargo test --release
+      '' else null;
+      
+      preUnpack = buildHooks.systemInfoHook;
+
+      preBuild = buildHooks.buildPhaseHook + ''
+        ${buildHooks.versionHook { command = "${rustc}/bin/rustc --version"; label = "Rust version"; }}
+        ${buildHooks.versionHook { command = "${cargo}/bin/cargo --version"; label = "Cargo version"; }}
       '';
 
-      preBuild = ''
-        echo
-        echo Building
-        echo ========
-      '';
-
-      preInstall = ''
-        echo  
-        echo Installing
-        echo ==========
-      '';
+      preInstall = buildHooks.installPhaseHook;
     };
+
+  # Create test-only derivation if tests are available
+  testCheck = if hasTests then pkgs.rustPlatform.buildRustPackage {
+    pname = "${packageName}-tests";
+    version = packageVersion;
+    src = self;
+    inherit cargoHash;
+    
+    # Only run tests, don't install anything
+    dontInstall = true;
+    doCheck = true;
+    
+    checkPhase = ''
+      echo
+      echo Testing
+      echo =======
+      ${buildHooks.versionHook { command = "${rustc}/bin/rustc --version"; label = "Rust version"; }}
+      ${buildHooks.versionHook { command = "${cargo}/bin/cargo --version"; label = "Cargo version"; }}
+      cargo test --release --verbose
+    '';
+  } else null;
 
 in
 {
@@ -112,6 +142,11 @@ in
 
   app = {
     type = "app";
-    program = "${package}/bin/${if binaryName != null then binaryName else package.pname}";
+    program = "${package}/bin/${detectedBinaryName}";
   };
+  
+  # Comprehensive checks system
+  checks = {
+    build = package;
+  } // (if hasTests then { test = testCheck; } else {});
 }
