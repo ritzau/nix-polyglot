@@ -87,6 +87,9 @@ let
         echo "Running ${name} unit tests..."
         cd ${self}
         
+        # Set variables for shell script
+        BUILD_TARGET="${buildTarget}"
+        
         # If explicit test project specified
         if [ -n "${if testProject != null then testProject else ""}" ]; then
           echo "Running explicit test project: ${if testProject != null then testProject else ""}"
@@ -112,9 +115,9 @@ let
             fi
           done
         # If solution file, run all tests in solution
-        elif [ "''${buildTarget##*.}" = "sln" ]; then
-          echo "Running all tests in solution: ${buildTarget}"
-          dotnet test "${buildTarget}" --logger "console;verbosity=detailed"
+        elif [ "''${BUILD_TARGET##*.}" = "sln" ]; then
+          echo "Running all tests in solution: $BUILD_TARGET"
+          dotnet test "$BUILD_TARGET" --logger "console;verbosity=detailed"
         else
           echo "No test configuration found"
           exit 1
