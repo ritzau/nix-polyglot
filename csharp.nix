@@ -64,58 +64,38 @@ let
     preInstall = buildHooks.installPhaseHook;
   };
 
-  # Auto-detect test projects if enableTests is true
-  # Support both common patterns: /tests directory and /ProjectName.Tests directory
+  # Simple test detection: either explicit test project or solution file
   hasTests = enableTests && (
     testProject != null || 
-    builtins.pathExists (self + "/tests") || 
-    builtins.pathExists (self + "/${name}.Tests") ||
     nixpkgs.lib.hasSuffix ".sln" buildTarget
   );
 
-  # Create test check if tests are detected
-  # Supports multiple test project patterns:
-  # 1. Explicit testProject parameter
-  # 2. tests/ directory (legacy/common)
-  # 3. ProjectName.Tests/ directory (.NET best practice)
-  # 4. Solution file with test projects
+  # Create proper test derivation using buildDotnetModule
   testCheck = if hasTests then
-    pkgs.writeShellApplication {
+    pkgs.buildDotnetModule {
       name = "${name}-tests";
-      runtimeInputs = [ sdk ];
-      text = ''
-        cd ${self}
-        
-        # Set variables for shell script
-        BUILD_TARGET="${buildTarget}"
-        
-        # If explicit test project specified
-        if [ -n "${if testProject != null then testProject else ""}" ]; then
-          dotnet test "${if testProject != null then testProject else ""}" --logger "console;verbosity=normal"
-        # If tests directory exists (common pattern)
-        elif [ -d "tests" ]; then
-          # Find test projects in tests directory
-          for test_proj in tests/*.csproj tests/*/*.csproj; do
-            if [ -f "$test_proj" ]; then
-              dotnet test "$test_proj" --logger "console;verbosity=normal"
-            fi
-          done
-        # If ProjectName.Tests directory exists (.NET best practice)
-        elif [ -d "${name}.Tests" ]; then
-          # Find test projects in ProjectName.Tests directory  
-          for test_proj in "${name}.Tests"/*.csproj; do
-            if [ -f "$test_proj" ]; then
-              dotnet test "$test_proj" --logger "console;verbosity=normal"
-            fi
-          done
-        # If solution file, run all tests in solution
-        elif [ "''${BUILD_TARGET##*.}" = "sln" ]; then
-          dotnet test "$BUILD_TARGET" --logger "console;verbosity=normal"
-        else
-          echo "❌ No test configuration found"
-          exit 1
-        fi
+      src = self;
+      
+      # Use explicit test project or the solution file
+      projectFile = if testProject != null then testProject else buildTarget;
+      
+      dotnet-sdk = sdk;
+      inherit nugetDeps selfContainedBuild;
+      
+      # Enable testing - this runs tests during the build phase
+      doCheck = true;
+      
+      # Don't try to install anything - we just want the tests to run
+      installPhase = ''
+        echo "Tests completed successfully"
+        mkdir -p $out
+        touch $out/test-success
       '';
+      
+      buildInputs = [ pkgs.fastfetch ];
+      
+      preUnpack = buildHooks.systemInfoHook + buildHooks.versionHook { command = "dotnet --version"; label = "Dotnet version"; };
+      preBuild = buildHooks.buildPhaseHook;
     }
   else
     null;
