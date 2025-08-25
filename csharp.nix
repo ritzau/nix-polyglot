@@ -84,7 +84,6 @@ let
       name = "${name}-tests";
       runtimeInputs = [ sdk ];
       text = ''
-        echo "Running ${name} unit tests..."
         cd ${self}
         
         # Set variables for shell script
@@ -92,38 +91,30 @@ let
         
         # If explicit test project specified
         if [ -n "${if testProject != null then testProject else ""}" ]; then
-          echo "Running explicit test project: ${if testProject != null then testProject else ""}"
-          dotnet test "${if testProject != null then testProject else ""}" --logger "console;verbosity=detailed"
+          dotnet test "${if testProject != null then testProject else ""}" --logger "console;verbosity=normal"
         # If tests directory exists (common pattern)
         elif [ -d "tests" ]; then
-          echo "Running tests from tests/ directory..."
           # Find test projects in tests directory
           for test_proj in tests/*.csproj tests/*/*.csproj; do
             if [ -f "$test_proj" ]; then
-              echo "Running test project: $test_proj"
-              dotnet test "$test_proj" --logger "console;verbosity=detailed"
+              dotnet test "$test_proj" --logger "console;verbosity=normal"
             fi
           done
         # If ProjectName.Tests directory exists (.NET best practice)
         elif [ -d "${name}.Tests" ]; then
-          echo "Running tests from ${name}.Tests/ directory..."
           # Find test projects in ProjectName.Tests directory  
           for test_proj in "${name}.Tests"/*.csproj; do
             if [ -f "$test_proj" ]; then
-              echo "Running test project: $test_proj"
-              dotnet test "$test_proj" --logger "console;verbosity=detailed"
+              dotnet test "$test_proj" --logger "console;verbosity=normal"
             fi
           done
         # If solution file, run all tests in solution
         elif [ "''${BUILD_TARGET##*.}" = "sln" ]; then
-          echo "Running all tests in solution: $BUILD_TARGET"
-          dotnet test "$BUILD_TARGET" --logger "console;verbosity=detailed"
+          dotnet test "$BUILD_TARGET" --logger "console;verbosity=normal"
         else
-          echo "No test configuration found"
+          echo "❌ No test configuration found"
           exit 1
         fi
-        
-        echo "✅ All ${name} tests completed successfully!"
       '';
     }
   else
