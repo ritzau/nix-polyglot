@@ -11,6 +11,8 @@
   extraGeneralTools ? [],
   rustc ? pkgs.rustc,
   cargo ? pkgs.cargo,
+  # Use rustPlatform for consistent toolchain
+  rustPlatform ? pkgs.rustPlatform,
   # Binary name - if not provided, will try to extract from Cargo.toml
   binaryName ? null
 }:
@@ -29,11 +31,12 @@ let
     cargo
   ] ++ standardTools.commonBuildTools;
 
-  # Add Rust-specific development tools
+  # Add Rust-specific development tools - use binary packages when possible
   rustDevTools = with pkgs; [
     rust-analyzer
-    clippy
+    # Use the standard stable toolchain components
     rustfmt
+    clippy
   ];
 
   # Combine with user extras
@@ -41,8 +44,9 @@ let
   allGeneralTools = generalTools ++ extraGeneralTools;
 
   shellHook = ''
-    echo "Rust Development Environment Ready!"
-    echo "Available tools: cargo, clippy, rustfmt, rust-analyzer"
+    echo "🦀 Rust Development Environment Ready!"
+    echo "Available tools: rustc, cargo, clippy, rustfmt, rust-analyzer"
+    echo "Project: ${packageName} v${packageVersion}"
   '';
 
   # Find Cargo.toml file
