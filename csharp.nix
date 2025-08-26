@@ -16,6 +16,17 @@
   # Test configuration
   enableTests ? true,
   testProject ? null, # Optional explicit test project path
+  # Advanced buildDotnetModule parameters
+  executables ? null, # null = install all, [] = install none, [...] = specific ones
+  runtimeDeps ? [ ],
+  dotnetBuildFlags ? [ ],
+  dotnetTestFlags ? [ ],
+  dotnetRestoreFlags ? [ ],
+  dotnetInstallFlags ? [ ],
+  dotnetPackFlags ? [ ],
+  dotnetFlags ? [ ],
+  testFilters ? [ ],
+  disabledTests ? [ ],
 }:
 
 let
@@ -58,6 +69,11 @@ let
     dotnet-sdk = sdk;
     inherit selfContainedBuild;
     inherit nugetDeps;
+    # Pass through buildDotnetModule parameters
+    inherit executables runtimeDeps;
+    inherit dotnetBuildFlags dotnetTestFlags dotnetRestoreFlags;
+    inherit dotnetInstallFlags dotnetPackFlags dotnetFlags;
+    inherit testFilters disabledTests;
     buildInputs = [ pkgs.fastfetch ];
     preUnpack =
       buildHooks.systemInfoHook
