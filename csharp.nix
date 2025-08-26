@@ -2,11 +2,11 @@
 
 # Main function that creates C# project outputs for a single system
 {
-  pkgs,           # Pass pkgs directly - no magic!
+  pkgs, # Pass pkgs directly - no magic!
   self,
   # Optional customizations
-  extraBuildTools ? [],
-  extraGeneralTools ? [],
+  extraBuildTools ? [ ],
+  extraGeneralTools ? [ ],
   sdk ? pkgs.dotnetCorePackages.sdk_8_0,
   # Build target - path to .csproj or .sln file (relative to src root)
   buildTarget,
@@ -15,7 +15,7 @@
   selfContainedBuild ? true,
   # Test configuration
   enableTests ? true,
-  testProject ? null  # Optional explicit test project path
+  testProject ? null, # Optional explicit test project path
 }:
 
 let
@@ -29,7 +29,8 @@ let
   # C#-specific build tools (in addition to standard tools)
   buildTools = [
     sdk
-  ] ++ standardTools.commonBuildTools;
+  ]
+  ++ standardTools.commonBuildTools;
 
   # Combine with user extras
   allBuildTools = buildTools ++ extraBuildTools;
@@ -41,12 +42,13 @@ let
 
   # Derive name from the build target file - remove extension if present
   baseName = builtins.baseNameOf buildTarget;
-  name = if nixpkgs.lib.hasSuffix ".csproj" baseName then
-    nixpkgs.lib.removeSuffix ".csproj" baseName
-  else if nixpkgs.lib.hasSuffix ".sln" baseName then
-    nixpkgs.lib.removeSuffix ".sln" baseName
-  else
-    baseName;
+  name =
+    if nixpkgs.lib.hasSuffix ".csproj" baseName then
+      nixpkgs.lib.removeSuffix ".csproj" baseName
+    else if nixpkgs.lib.hasSuffix ".sln" baseName then
+      nixpkgs.lib.removeSuffix ".sln" baseName
+    else
+      baseName;
 
   # Common build configuration
   commonBuildConfig = {
@@ -57,64 +59,78 @@ let
     inherit selfContainedBuild;
     inherit nugetDeps;
     buildInputs = [ pkgs.fastfetch ];
-    preUnpack = buildHooks.systemInfoHook + buildHooks.versionHook { command = "dotnet --version"; label = "Dotnet version"; };
+    preUnpack =
+      buildHooks.systemInfoHook
+      + buildHooks.versionHook {
+        command = "dotnet --version";
+        label = "Dotnet version";
+      };
     preBuild = buildHooks.buildPhaseHook;
     preInstall = buildHooks.installPhaseHook;
   };
 
   # Dev build - uses dotnet build with Debug configuration
-  devPackage = pkgs.buildDotnetModule (commonBuildConfig // {
-    name = "${name}-dev";
-    buildType = "Debug";
-    preBuild = buildHooks.buildPhaseHook + ''
-      echo "Building dev variant with Debug configuration"
-    '';
-  });
-
-  # Release build - uses dotnet build with Release configuration
-  releasePackage = pkgs.buildDotnetModule (commonBuildConfig // {
-    name = "${name}-release";
-    buildType = "Release";
-    preBuild = buildHooks.buildPhaseHook + ''
-      echo "Building release variant with Release configuration"
-    '';
-  });
-
-  # Simple test detection: either explicit test project or solution file
-  hasTests = enableTests && (
-    testProject != null ||
-    nixpkgs.lib.hasSuffix ".sln" buildTarget
+  devPackage = pkgs.buildDotnetModule (
+    commonBuildConfig
+    // {
+      name = "${name}-dev";
+      buildType = "Debug";
+      preBuild = buildHooks.buildPhaseHook + ''
+        echo "Building dev variant with Debug configuration"
+      '';
+    }
   );
 
-  # Create proper test derivation using buildDotnetModule
-  testCheck = if hasTests then
-    pkgs.buildDotnetModule {
-      name = "${name}-tests";
-      src = self;
-
-      # Use explicit test project or the solution file
-      projectFile = if testProject != null then testProject else buildTarget;
-
-      dotnet-sdk = sdk;
-      inherit nugetDeps selfContainedBuild;
-
-      # Enable testing - this runs tests during the build phase
-      doCheck = true;
-
-      # Don't try to install anything - we just want the tests to run
-      installPhase = ''
-        echo "Tests completed successfully"
-        mkdir -p $out
-        touch $out/test-success
+  # Release build - uses dotnet build with Release configuration
+  releasePackage = pkgs.buildDotnetModule (
+    commonBuildConfig
+    // {
+      name = "${name}-release";
+      buildType = "Release";
+      preBuild = buildHooks.buildPhaseHook + ''
+        echo "Building release variant with Release configuration"
       '';
-
-      buildInputs = [ pkgs.fastfetch ];
-
-      preUnpack = buildHooks.systemInfoHook + buildHooks.versionHook { command = "dotnet --version"; label = "Dotnet version"; };
-      preBuild = buildHooks.buildPhaseHook;
     }
-  else
-    null;
+  );
+
+  # Simple test detection: either explicit test project or solution file
+  hasTests = enableTests && (testProject != null || nixpkgs.lib.hasSuffix ".sln" buildTarget);
+
+  # Create proper test derivation using buildDotnetModule
+  testCheck =
+    if hasTests then
+      pkgs.buildDotnetModule {
+        name = "${name}-tests";
+        src = self;
+
+        # Use explicit test project or the solution file
+        projectFile = if testProject != null then testProject else buildTarget;
+
+        dotnet-sdk = sdk;
+        inherit nugetDeps selfContainedBuild;
+
+        # Enable testing - this runs tests during the build phase
+        doCheck = true;
+
+        # Don't try to install anything - we just want the tests to run
+        installPhase = ''
+          echo "Tests completed successfully"
+          mkdir -p $out
+          touch $out/test-success
+        '';
+
+        buildInputs = [ pkgs.fastfetch ];
+
+        preUnpack =
+          buildHooks.systemInfoHook
+          + buildHooks.versionHook {
+            command = "dotnet --version";
+            label = "Dotnet version";
+          };
+        preBuild = buildHooks.buildPhaseHook;
+      }
+    else
+      null;
 
   # Individual components for backward compatibility and extension
   devShell = pkgs.mkShell {
@@ -136,7 +152,8 @@ let
   checks = {
     build-dev = devPackage;
     build-release = releasePackage;
-  } // (if hasTests then { test = testCheck; } else {});
+  }
+  // (if hasTests then { test = testCheck; } else { });
 
   # Default flake outputs structure - ready to use
   mkDefaultOutputs = {
@@ -155,7 +172,12 @@ in
   # Backward compatibility - expose individual components
   inherit devShell checks;
   # Also expose dev and release variants
-  inherit devPackage releasePackage devApp releaseApp;
+  inherit
+    devPackage
+    releasePackage
+    devApp
+    releaseApp
+    ;
 
   # New simplified interface
   inherit mkDefaultOutputs;

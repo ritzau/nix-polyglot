@@ -24,7 +24,7 @@ let
 in {
   # Use organizational standard tools
   generalTools = standardTools.generalTools;
-  
+
   # Language-specific tools + common build tools
   buildTools = [
     # language-specific tools here
@@ -49,6 +49,6 @@ in {
 ## Organizational Policy
 
 - All language environments MUST use `standardTools.generalTools`
-- Language-specific tools should extend, not replace, standard tools  
+- Language-specific tools should extend, not replace, standard tools
 - Changes to standard tools require review (affects all projects)
 - Security tools are mandatory and cannot be disabled by individual projects

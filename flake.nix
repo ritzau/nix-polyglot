@@ -6,8 +6,14 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = import nixpkgs { inherit system; };
       in
@@ -21,19 +27,25 @@
             echo "Nix Polyglot Development Environment"
           '';
         };
-      }) // {
-        # Expose language helpers globally (not per-system)
-        lib = {
-          csharp = import ./csharp.nix { inherit nixpkgs; };
-          rust = import ./rust.nix { inherit nixpkgs; };
-          
-          # Also expose standard tools and hooks for direct use
-          standardTools = system: import ./lib/standard-tools.nix { 
+      }
+    )
+    // {
+      # Expose language helpers globally (not per-system)
+      lib = {
+        csharp = import ./csharp.nix { inherit nixpkgs; };
+        rust = import ./rust.nix { inherit nixpkgs; };
+
+        # Also expose standard tools and hooks for direct use
+        standardTools =
+          system:
+          import ./lib/standard-tools.nix {
             pkgs = import nixpkgs { inherit system; };
           };
-          buildHooks = system: import ./lib/build-hooks.nix { 
+        buildHooks =
+          system:
+          import ./lib/build-hooks.nix {
             pkgs = import nixpkgs { inherit system; };
           };
-        };
       };
+    };
 }

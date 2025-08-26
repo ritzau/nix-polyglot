@@ -6,7 +6,7 @@ default:
     @just --list
 
 # Development commands
-dev: 
+dev:
     @echo "🚀 Starting development environment..."
     nix develop
 
@@ -91,6 +91,6 @@ docs:
 setup-hooks:
     @echo "🎣 Setting up pre-commit hooks..."
     @echo "# Pre-commit hook - run checks before commit" > .git/hooks/pre-commit
-    @echo "just check" >> .git/hooks/pre-commit  
+    @echo "just check" >> .git/hooks/pre-commit
     @chmod +x .git/hooks/pre-commit
     @echo "Pre-commit hook installed!"

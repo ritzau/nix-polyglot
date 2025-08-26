@@ -5,32 +5,32 @@ let
   generalTools = with pkgs; [
     # File and directory utilities
     tree
-    bat           # Better cat with syntax highlighting
+    bat # Better cat with syntax highlighting
 
     # System monitoring and info
-    bottom        # Better top/htop
-    fastfetch     # System information display
+    bottom # Better top/htop
+    fastfetch # System information display
 
     # Data processing
-    jq            # JSON processor
+    jq # JSON processor
 
     # Git utilities (if not already available)
     git
 
     # Text processing
-    ripgrep       # Fast grep replacement
-    fd            # Fast find replacement
+    ripgrep # Fast grep replacement
+    fd # Fast find replacement
   ];
 
   # Common build/development tools that many languages can benefit from
   commonBuildTools = with pkgs; [
     # Output formatting for consistent build experience
-    figlet        # ASCII art text for build phases
+    figlet # ASCII art text for build phases
 
     # Build utilities and task runners
-    gnumake       # Make for languages that use it
-    just          # Command runner - organizational standard interface
-    pkg-config    # Package configuration
+    gnumake # Make for languages that use it
+    just # Command runner - organizational standard interface
+    pkg-config # Package configuration
 
     # Archive/compression tools
     unzip
@@ -54,13 +54,13 @@ let
     tmux
 
     # Command history and search
-    fzf           # Fuzzy finder
+    fzf # Fuzzy finder
   ];
 
   # Documentation and help tools
   docTools = with pkgs; [
     # Documentation generators and viewers
-    pandoc        # Universal document converter
+    pandoc # Universal document converter
 
     # Man page utilities
     man-pages
@@ -71,16 +71,17 @@ in
 # This ensures consistent tooling across all language environments
 {
   # Expose individual tool categories
-  inherit generalTools commonBuildTools securityTools shellTools docTools;
+  inherit
+    generalTools
+    commonBuildTools
+    securityTools
+    shellTools
+    docTools
+    ;
 
   # Combine all standard tools that should be in every dev environment
-  getAllStandardTools = generalTools
-    ++ commonBuildTools
-    ++ securityTools
-    ++ shellTools
-    ++ docTools;
+  getAllStandardTools = generalTools ++ commonBuildTools ++ securityTools ++ shellTools ++ docTools;
 
   # Minimal set for lightweight environments
-  getMinimalTools = generalTools
-    ++ [ pkgs.figlet ];  # At minimum, keep the build formatting
+  getMinimalTools = generalTools ++ [ pkgs.figlet ]; # At minimum, keep the build formatting
 }
