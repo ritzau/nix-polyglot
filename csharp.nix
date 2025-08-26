@@ -75,6 +75,9 @@ let
     inherit executables runtimeDeps;
     inherit testFilters disabledTests;
 
+    # Test configuration - use testProjectFile if provided, otherwise use doCheck
+    testProjectFile = if hasTests && testProject != null then testProject else null;
+
     # Reproducibility controls (always enabled)
     env = {
       # Ensure consistent timezone and locale
@@ -126,6 +129,7 @@ let
     // {
       name = "${name}-dev";
       buildType = "Debug";
+      doCheck = hasTests;
       preBuild = buildHooks.buildPhaseHook + ''
         echo "Building dev variant with Debug configuration"
       '';
@@ -138,6 +142,7 @@ let
     // {
       name = "${name}-release";
       buildType = "Release";
+      doCheck = hasTests;
       preBuild = buildHooks.buildPhaseHook + ''
         echo "Building release variant with Release configuration"
       '';
@@ -146,42 +151,6 @@ let
 
   # Simple test detection: either explicit test project or solution file
   hasTests = enableTests && (testProject != null || nixpkgs.lib.hasSuffix ".sln" buildTarget);
-
-  # Create proper test derivation using buildDotnetModule
-  testCheck =
-    if hasTests then
-      pkgs.buildDotnetModule {
-        name = "${name}-tests";
-        src = self;
-
-        # Use explicit test project or the solution file
-        projectFile = if testProject != null then testProject else buildTarget;
-
-        dotnet-sdk = sdk;
-        inherit nugetDeps selfContainedBuild;
-
-        # Enable testing - this runs tests during the build phase
-        doCheck = true;
-
-        # Don't try to install anything - we just want the tests to run
-        installPhase = ''
-          echo "Tests completed successfully"
-          mkdir -p $out
-          touch $out/test-success
-        '';
-
-        buildInputs = [ pkgs.fastfetch ];
-
-        preUnpack =
-          buildHooks.systemInfoHook
-          + buildHooks.versionHook {
-            command = "dotnet --version";
-            label = "Dotnet version";
-          };
-        preBuild = buildHooks.buildPhaseHook;
-      }
-    else
-      null;
 
   # Individual components for backward compatibility and extension
   devShell = pkgs.mkShell {
@@ -207,12 +176,11 @@ let
     };
   };
 
-  # Include checks - both dev and release builds, plus tests if enabled
+  # Include checks - both dev and release builds (tests run via doCheck)
   checks = {
-    build-dev = devPackage;
-    build-release = releasePackage;
-  }
-  // (if hasTests then { test = testCheck; } else { });
+    build-dev = devPackage; # Tests run automatically if hasTests=true
+    build-release = releasePackage; # Tests run automatically if hasTests=true
+  };
 
   # Default flake outputs structure - ready to use
   mkDefaultOutputs = {
