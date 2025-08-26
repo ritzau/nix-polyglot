@@ -135,14 +135,12 @@ let
     '';
   } else null;
 
-in
-{
+let
+  # Individual components for backward compatibility and extension
   devShell = pkgs.mkShell {
     packages = allGeneralTools ++ allBuildTools;
     inherit shellHook;
   };
-
-  package = package;
 
   app = {
     type = "app";
@@ -153,4 +151,20 @@ in
   checks = {
     build = package;
   } // (if hasTests then { test = testCheck; } else {});
+
+  # Default flake outputs structure - ready to use
+  mkDefaultOutputs = {
+    devShells.default = devShell;
+    packages.default = package;
+    apps.default = app;
+    inherit checks;
+  };
+
+in
+{
+  # Backward compatibility - expose individual components
+  inherit devShell package app checks;
+  
+  # New simplified interface
+  inherit mkDefaultOutputs;
 }
