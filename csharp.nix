@@ -1,39 +1,72 @@
 { nixpkgs }:
 
+# C# project builder with comprehensive reproducibility and buildDotnetModule integration
+#
+# This function creates development and release builds, development shells, apps, and checks
+# for C# projects with built-in reproducible builds, test integration, and best practices.
+#
+# Key features:
+# - Always-on reproducible builds with deterministic flags and environment isolation
+# - Proper buildDotnetModule parameter support for advanced configuration
+# - Integrated test execution via doCheck (no separate test derivations)
+# - Assembly version control and code signing management
+# - Development and release build variants with comprehensive checks
+#
+# Usage:
+#   csharp = import ./csharp.nix { inherit nixpkgs; };
+#   project = csharp { pkgs = nixpkgs.legacyPackages.${system}; self = ./.; buildTarget = "MyApp.sln"; };
+#   # Use project.mkDefaultOutputs for complete flake integration
+#
 # Main function that creates C# project outputs for a single system
 {
-  pkgs, # Pass pkgs directly - no magic!
-  self,
-  # Optional customizations
-  extraBuildTools ? [ ],
-  extraGeneralTools ? [ ],
+  # Required parameters
+  pkgs, # Nixpkgs package set
+  self, # Source path/flake self
+  buildTarget, # Path to .csproj or .sln file (relative to src root)
+
+  # SDK and build configuration
   sdk ? pkgs.dotnetCorePackages.sdk_8_0,
-  # Build target - path to .csproj or .sln file (relative to src root)
-  buildTarget,
-  # NuGet dependencies and build options
-  nugetDeps ? null,
+  nugetDeps ? null, # Path to deps.json or derivation
   selfContainedBuild ? true,
+
+  # Development environment customization
+  extraBuildTools ? [ ], # Additional build-time packages
+  extraGeneralTools ? [ ], # Additional development packages
+
   # Test configuration
   enableTests ? true,
-  testProject ? null, # Optional explicit test project path
-  # Advanced buildDotnetModule parameters
+  testProject ? null, # Optional explicit test project path (.csproj)
+  testFilters ? [ ], # Test filters for dotnet test --filter
+  disabledTests ? [ ], # Specific tests to disable
+
+  # Build customization (buildDotnetModule parameters)
   executables ? null, # null = install all, [] = install none, [...] = specific ones
-  runtimeDeps ? [ ],
-  dotnetBuildFlags ? [ ],
-  dotnetTestFlags ? [ ],
-  dotnetRestoreFlags ? [ ],
-  dotnetInstallFlags ? [ ],
-  dotnetPackFlags ? [ ],
-  dotnetFlags ? [ ],
-  testFilters ? [ ],
-  disabledTests ? [ ],
-  # Reproducibility controls
-  sourceEpoch ? 1,
+  runtimeDeps ? [ ], # Runtime library dependencies
+  dotnetBuildFlags ? [ ], # Additional build flags
+  dotnetTestFlags ? [ ], # Additional test flags
+  dotnetRestoreFlags ? [ ], # Additional restore flags
+  dotnetInstallFlags ? [ ], # Additional install flags
+  dotnetPackFlags ? [ ], # Additional pack flags
+  dotnetFlags ? [ ], # Flags applied to all dotnet commands
+
+  # Reproducibility controls (always enabled for security/consistency)
+  sourceEpoch ? 1, # Timestamp for SOURCE_DATE_EPOCH
   assemblyVersion ? null, # Override assembly version for deterministic builds
-  enforceCodeSigning ? false, # Disable code signing for reproducibility
+  enforceCodeSigning ? false, # Enable code signing (disabled by default for reproducibility)
 }:
 
 let
+  # Input validation
+  _validateBuildTarget =
+    assert buildTarget != null && buildTarget != "";
+    "buildTarget must be a non-empty string pointing to a .csproj or .sln file";
+  _validatePkgs =
+    assert pkgs != null;
+    "pkgs parameter is required";
+  _validateSelf =
+    assert self != null;
+    "self parameter is required";
+
   # Import organizational standard tools and hooks
   standardTools = import ./lib/standard-tools.nix { inherit pkgs; };
   buildHooks = import ./lib/build-hooks.nix { inherit pkgs; };
@@ -225,16 +258,17 @@ let
 
 in
 {
-  # Backward compatibility - expose individual components
-  inherit devShell checks;
-  # Also expose dev and release variants
+  # Individual components for flexible usage
   inherit
-    devPackage
-    releasePackage
-    devApp
-    releaseApp
+    devShell # Development shell with tools
+    devPackage # Debug build derivation
+    releasePackage # Release build derivation
+    devApp # Debug app with meta
+    releaseApp # Release app with meta
+    checks # Build checks (dev + release with integrated tests)
     ;
 
-  # New simplified interface
+  # Complete flake integration - recommended for most users
+  # Contains: devShells.default, packages.{default,dev,release}, apps.{default,dev,release}, checks
   inherit mkDefaultOutputs;
 }
