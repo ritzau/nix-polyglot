@@ -29,6 +29,8 @@
   disabledTests ? [ ],
   # Reproducibility controls
   sourceEpoch ? 1,
+  assemblyVersion ? null, # Override assembly version for deterministic builds
+  enforceCodeSigning ? false, # Disable code signing for reproducibility
 }:
 
 let
@@ -83,12 +85,26 @@ let
       # Ensure consistent timezone and locale
       TZ = "UTC";
       LC_ALL = "C.UTF-8";
-      # Disable telemetry for reproducibility
+      LANG = "C.UTF-8";
+
+      # Disable telemetry and user-specific behavior
       DOTNET_CLI_TELEMETRY_OPTOUT = "1";
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE = "1";
       DOTNET_NOLOGO = "1";
-      # Timestamp control
+      DOTNET_CLI_UI_LANGUAGE = "en";
+
+      # Force consistent behavior
+      DOTNET_GENERATE_ASPNET_CERTIFICATE = "false";
+      DOTNET_ADD_GLOBAL_TOOLS_TO_PATH = "false";
+      DOTNET_MULTILEVEL_LOOKUP = "0";
+
+      # Reproducible build environment
       SOURCE_DATE_EPOCH = toString sourceEpoch;
+      DETERMINISTIC_BUILD = "true";
+
+      # Disable user-specific caches and configs
+      NUGET_PACKAGES = "$TMPDIR/nuget-packages";
+      DOTNET_CLI_HOME = "$TMPDIR/dotnet-home";
     };
 
     # Combine user flags with reproducibility flags
@@ -96,11 +112,24 @@ let
       "/p:Deterministic=true"
       "/p:ContinuousIntegrationBuild=true"
       "/p:SourceRevisionId=${self.rev or "0000000000000000000000000000000000000000"}"
+      "/p:PublishRepositoryUrl=true"
+      "/p:EmbedUntrackedSources=true"
     ]
+    ++ (nixpkgs.lib.optionals (assemblyVersion != null) [
+      "/p:AssemblyVersion=${assemblyVersion}"
+      "/p:FileVersion=${assemblyVersion}"
+      "/p:InformationalVersion=${assemblyVersion}"
+    ])
+    ++ (nixpkgs.lib.optionals (!enforceCodeSigning) [
+      "/p:SignAssembly=false"
+      "/p:DelaySign=false"
+    ])
     ++ dotnetBuildFlags;
 
     dotnetRestoreFlags = [
       "--no-cache"
+      "--locked-mode" # Fail if package lock file is out of date
+      "--force-evaluate" # Force re-evaluation of all dependencies
     ]
     ++ dotnetRestoreFlags;
 
