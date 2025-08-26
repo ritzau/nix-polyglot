@@ -135,7 +135,6 @@ let
     '';
   } else null;
 
-let
   # Individual components for backward compatibility and extension
   devShell = pkgs.mkShell {
     packages = allGeneralTools ++ allBuildTools;
