@@ -27,6 +27,8 @@
   dotnetFlags ? [ ],
   testFilters ? [ ],
   disabledTests ? [ ],
+  # Reproducibility controls
+  sourceEpoch ? 1,
 }:
 
 let
@@ -71,9 +73,42 @@ let
     inherit nugetDeps;
     # Pass through buildDotnetModule parameters
     inherit executables runtimeDeps;
-    inherit dotnetBuildFlags dotnetTestFlags dotnetRestoreFlags;
-    inherit dotnetInstallFlags dotnetPackFlags dotnetFlags;
     inherit testFilters disabledTests;
+
+    # Reproducibility controls (always enabled)
+    env = {
+      # Ensure consistent timezone and locale
+      TZ = "UTC";
+      LC_ALL = "C.UTF-8";
+      # Disable telemetry for reproducibility
+      DOTNET_CLI_TELEMETRY_OPTOUT = "1";
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE = "1";
+      DOTNET_NOLOGO = "1";
+      # Timestamp control
+      SOURCE_DATE_EPOCH = toString sourceEpoch;
+    };
+
+    # Combine user flags with reproducibility flags
+    dotnetBuildFlags = [
+      "/p:Deterministic=true"
+      "/p:ContinuousIntegrationBuild=true"
+      "/p:SourceRevisionId=${self.rev or "0000000000000000000000000000000000000000"}"
+    ]
+    ++ dotnetBuildFlags;
+
+    dotnetRestoreFlags = [
+      "--no-cache"
+    ]
+    ++ dotnetRestoreFlags;
+
+    # Other dotnet flags passed through
+    inherit
+      dotnetTestFlags
+      dotnetInstallFlags
+      dotnetPackFlags
+      dotnetFlags
+      ;
+
     buildInputs = [ pkgs.fastfetch ];
     preUnpack =
       buildHooks.systemInfoHook
@@ -157,11 +192,19 @@ let
   devApp = {
     type = "app";
     program = "${devPackage}/bin/${name}";
+    meta = {
+      description = "C# application ${name} (Debug build)";
+      platforms = nixpkgs.lib.platforms.all;
+    };
   };
 
   releaseApp = {
     type = "app";
     program = "${releasePackage}/bin/${name}";
+    meta = {
+      description = "C# application ${name} (Release build)";
+      platforms = nixpkgs.lib.platforms.all;
+    };
   };
 
   # Include checks - both dev and release builds, plus tests if enabled
