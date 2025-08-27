@@ -1,23 +1,23 @@
 { nixpkgs }:
 
 # Main function that creates Rust project outputs for a single system
-{
-  pkgs,
-  # Pass pkgs directly - no magic!
-  self,
-  # Required for dependency management
-  cargoHash ? null,
-  # Optional customizations
-  extraBuildTools ? [ ],
-  extraGeneralTools ? [ ],
-  rustc ? pkgs.rustc,
-  cargo ? pkgs.cargo,
-  # Use rustPlatform for consistent toolchain
-  rustPlatform ? pkgs.rustPlatform,
-  # Binary name - if not provided, will try to extract from Cargo.toml
-  binaryName ? null,
-  # Build configuration - "dev" or "release"
-  buildType ? "dev",
+{ pkgs
+, # Pass pkgs directly - no magic!
+  self
+, # Required for dependency management
+  cargoHash ? null
+, # Optional customizations
+  extraBuildTools ? [ ]
+, extraGeneralTools ? [ ]
+, rustc ? pkgs.rustc
+, cargo ? pkgs.cargo
+, # Use rustPlatform for consistent toolchain
+  rustPlatform ? pkgs.rustPlatform
+, # Binary name - if not provided, will try to extract from Cargo.toml
+  binaryName ? null
+, # Build configuration - "dev" or "release"
+  buildType ? "dev"
+,
 }:
 
 let
@@ -208,31 +208,32 @@ let
   # Create test-only derivation if tests are available
   testCheck =
     if hasTests then
-      pkgs.rustPlatform.buildRustPackage {
-        pname = "${packageName}-tests";
-        version = packageVersion;
-        src = self;
-        inherit cargoHash;
+      pkgs.rustPlatform.buildRustPackage
+        {
+          pname = "${packageName}-tests";
+          version = packageVersion;
+          src = self;
+          inherit cargoHash;
 
-        # Only run tests, don't install anything
-        dontInstall = true;
-        doCheck = true;
+          # Only run tests, don't install anything
+          dontInstall = true;
+          doCheck = true;
 
-        checkPhase = ''
-          echo
-          echo Testing
-          echo =======
-          ${buildHooks.versionHook {
-            command = "${rustc}/bin/rustc --version";
-            label = "Rust version";
-          }}
-          ${buildHooks.versionHook {
-            command = "${cargo}/bin/cargo --version";
-            label = "Cargo version";
-          }}
-          cargo test --release --verbose
-        '';
-      }
+          checkPhase = ''
+            echo
+            echo Testing
+            echo =======
+            ${buildHooks.versionHook {
+              command = "${rustc}/bin/rustc --version";
+              label = "Rust version";
+            }}
+            ${buildHooks.versionHook {
+              command = "${cargo}/bin/cargo --version";
+              label = "Cargo version";
+            }}
+            cargo test --release --verbose
+          '';
+        }
     else
       null;
 

@@ -68,7 +68,7 @@ let
 
 in
 # Organizational standard tools - single source of truth
-# This ensures consistent tooling across all language environments
+  # This ensures consistent tooling across all language environments
 {
   # Expose individual tool categories
   inherit

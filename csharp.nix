@@ -1,7 +1,7 @@
-{
-  nixpkgs,
-  treefmt-nix,
-  git-hooks-nix,
+{ nixpkgs
+, treefmt-nix
+, git-hooks-nix
+,
 }:
 
 # C# project builder with comprehensive reproducibility and buildDotnetModule integration
@@ -24,64 +24,70 @@
 # Main function that creates C# project outputs for a single system
 {
   # Required parameters
-  pkgs,
-  # Nixpkgs package set
-  self,
-  # Source path/flake self
-  buildTarget, # Path to .csproj or .sln file (relative to src root)
+  pkgs
+, # Nixpkgs package set
+  self
+, # Source path/flake self
+  buildTarget
+, # Path to .csproj or .sln file (relative to src root)
 
   # SDK and build configuration
-  sdk ? pkgs.dotnetCorePackages.sdk_8_0,
-  nugetDeps ? null,
-  # Path to deps.json or derivation
-  selfContainedBuild ? true,
-  # Development environment customization
-  extraBuildTools ? [ ],
-  # Additional build-time packages
-  extraGeneralTools ? [ ], # Additional development packages
+  sdk ? pkgs.dotnetCorePackages.sdk_8_0
+, nugetDeps ? null
+, # Path to deps.json or derivation
+  selfContainedBuild ? true
+, # Development environment customization
+  extraBuildTools ? [ ]
+, # Additional build-time packages
+  extraGeneralTools ? [ ]
+, # Additional development packages
 
   # Test configuration
-  enableTests ? true,
-  testProject ? null,
-  # Optional explicit test project path (.csproj)
-  testFilters ? [ ],
-  # Test filters for dotnet test --filter
-  disabledTests ? [ ], # Specific tests to disable
+  enableTests ? true
+, testProject ? null
+, # Optional explicit test project path (.csproj)
+  testFilters ? [ ]
+, # Test filters for dotnet test --filter
+  disabledTests ? [ ]
+, # Specific tests to disable
 
   # Build customization (buildDotnetModule parameters)
-  executables ? null,
-  # null = install all, [] = install none, [...] = specific ones
-  runtimeDeps ? [ ],
-  # Runtime library dependencies
-  dotnetBuildFlags ? [ ],
-  # Additional build flags
-  dotnetTestFlags ? [ ],
-  # Additional test flags
-  dotnetRestoreFlags ? [ ],
-  # Additional restore flags
-  dotnetInstallFlags ? [ ],
-  # Additional install flags
-  dotnetPackFlags ? [ ],
-  # Additional pack flags
-  dotnetFlags ? [ ], # Flags applied to all dotnet commands
+  executables ? null
+, # null = install all, [] = install none, [...] = specific ones
+  runtimeDeps ? [ ]
+, # Runtime library dependencies
+  dotnetBuildFlags ? [ ]
+, # Additional build flags
+  dotnetTestFlags ? [ ]
+, # Additional test flags
+  dotnetRestoreFlags ? [ ]
+, # Additional restore flags
+  dotnetInstallFlags ? [ ]
+, # Additional install flags
+  dotnetPackFlags ? [ ]
+, # Additional pack flags
+  dotnetFlags ? [ ]
+, # Flags applied to all dotnet commands
 
   # Reproducibility controls (always enabled for security/consistency)
-  sourceEpoch ? 1,
-  # Timestamp for SOURCE_DATE_EPOCH
-  assemblyVersion ? null,
-  # Override assembly version for deterministic builds
-  enforceCodeSigning ? false, # Enable code signing (disabled by default for reproducibility)
+  sourceEpoch ? 1
+, # Timestamp for SOURCE_DATE_EPOCH
+  assemblyVersion ? null
+, # Override assembly version for deterministic builds
+  enforceCodeSigning ? false
+, # Enable code signing (disabled by default for reproducibility)
 
   # Formatting and linting configuration
-  enableFormatting ? true,
-  # Enable treefmt integration for C# formatting
-  enableLinting ? true,
-  # Enable pre-commit hooks with linting
-  extraFormatters ? { },
-  # Additional formatters to configure in treefmt
-  extraPreCommitHooks ? { },
-  # Additional pre-commit hooks to configure
-  system, # System architecture (required for treefmt-nix and git-hooks-nix)
+  enableFormatting ? true
+, # Enable treefmt integration for C# formatting
+  enableLinting ? true
+, # Enable pre-commit hooks with linting
+  extraFormatters ? { }
+, # Additional formatters to configure in treefmt
+  extraPreCommitHooks ? { }
+, # Additional pre-commit hooks to configure
+  system
+, # System architecture (required for treefmt-nix and git-hooks-nix)
 }:
 
 let
@@ -382,13 +388,13 @@ in
 {
   # Individual components for flexible usage
   inherit
-    devShell # Development shell with tools
-    devPackage # Debug build derivation
-    releasePackage # Release build derivation
-    devApp # Debug app with meta
-    releaseApp # Release app with meta
-    lintApp # Linting app
-    checks # Build checks (dev + release with integrated tests)
+    devShell# Development shell with tools
+    devPackage# Debug build derivation
+    releasePackage# Release build derivation
+    devApp# Debug app with meta
+    releaseApp# Release app with meta
+    lintApp# Linting app
+    checks# Build checks (dev + release with integrated tests)
     ;
 
   # Formatting components (optional) - formatApp removed, use `nix fmt` instead

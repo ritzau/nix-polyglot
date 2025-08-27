@@ -132,9 +132,9 @@ test_main_flake() {
         "DEV_SHELL_SUCCESS"
 
     # Test library exports
-    run_evaluation_test "csharp lib export" \
-        "nix eval --impure --expr 'let lib = (import ./flake.nix).lib; in builtins.attrNames lib'" \
-        "4"
+    run_evaluation_test "lib exports available" \
+        "nix eval .#lib --apply builtins.attrNames" \
+        "6"
 
     echo ""
 }
