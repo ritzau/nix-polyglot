@@ -87,7 +87,7 @@ run_evaluation_test() {
     echo -n "Testing $test_name... "
 
     if result=$(timeout 15s bash -c "$test_command" 2>/dev/null); then
-        count=$(echo "$result" | wc -w | tr -d ' ')
+        count=$(echo "$result" | grep -o '"[^"]*"' | wc -l | tr -d ' ')
         if [[ "$count" -eq "$expected_count" ]]; then
             echo -e "${GREEN}✅ PASS (found $count items)${NC}"
             PASSED_TESTS=$((PASSED_TESTS + 1))
