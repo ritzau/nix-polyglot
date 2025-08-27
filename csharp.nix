@@ -343,6 +343,16 @@ let
     pre-commit-check = git-hooks;
   };
 
+  # Project-specific formatter for C# code
+  projectFormatter = nixpkgs.lib.optionalAttrs enableFormatting (
+    pkgs.writeShellScript "csharp-formatter" ''
+      set -euo pipefail
+      echo "Formatting C# code..."
+      ${sdk}/bin/dotnet format --verbosity minimal
+      echo "C# formatting complete!"
+    ''
+  );
+
   # Default flake outputs structure - ready to use
   mkDefaultOutputs = {
     devShells.default = devShell;
@@ -359,6 +369,9 @@ let
       check-format = checkFormatApp;
     };
     inherit checks;
+  }
+  // nixpkgs.lib.optionalAttrs enableFormatting {
+    formatter = projectFormatter;
   };
 
 in
@@ -376,6 +389,7 @@ in
 
   # Formatting components (optional) - formatApp removed, use `nix fmt` instead
   checkFormatApp = if enableFormatting then checkFormatApp else null;
+  projectFormatter = if enableFormatting then projectFormatter else null;
   # treefmt removed - use main flake's `nix fmt` instead
   git-hooks = if enableLinting then git-hooks else null;
 
