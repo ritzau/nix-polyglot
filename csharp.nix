@@ -296,14 +296,14 @@ let
 
   checkFormatApp = nixpkgs.lib.optionalAttrs enableFormatting {
     type = "app";
-    program = pkgs.writeShellScript "check-format-${name}" ''
+    program = "${pkgs.writeShellScript "check-format-${name}" ''
       set -euo pipefail
       echo "Checking formatting of ${name} project files..."
       echo "Use 'nix fmt --check' from the project root for universal format checking"
       echo "Checking C# formatting specifically..."
       ${sdk}/bin/dotnet format --verify-no-changes --verbosity diagnostic
       echo "C# formatting check passed!"
-    '';
+    ''}";
     meta = {
       description = "Check C# code formatting";
       platforms = nixpkgs.lib.platforms.all;
@@ -312,12 +312,12 @@ let
 
   lintApp = {
     type = "app";
-    program = pkgs.writeShellScript "lint-${name}" ''
+    program = "${pkgs.writeShellScript "lint-${name}" ''
       set -euo pipefail
       echo "Running C# linting checks..."
       ${sdk}/bin/dotnet format --verify-no-changes --verbosity diagnostic
       echo "Linting passed!"
-    '';
+    ''}";
     meta = {
       description = "Lint ${name} C# code";
       platforms = nixpkgs.lib.platforms.all;
@@ -349,14 +349,16 @@ let
     packages.default = devPackage;
     packages.dev = devPackage;
     packages.release = releasePackage;
-    apps.default = devApp;
-    apps.dev = devApp;
-    apps.release = releaseApp;
-    apps.lint = lintApp;
+    apps = {
+      default = devApp;
+      dev = devApp;
+      release = releaseApp;
+      lint = lintApp;
+    }
+    // nixpkgs.lib.optionalAttrs enableFormatting {
+      check-format = checkFormatApp;
+    };
     inherit checks;
-  }
-  // nixpkgs.lib.optionalAttrs enableFormatting {
-    apps.check-format = checkFormatApp;
   };
 
 in
