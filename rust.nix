@@ -2,7 +2,8 @@
 
 # Main function that creates Rust project outputs for a single system
 {
-  pkgs, # Pass pkgs directly - no magic!
+  pkgs,
+  # Pass pkgs directly - no magic!
   self,
   # Required for dependency management
   cargoHash ? null,

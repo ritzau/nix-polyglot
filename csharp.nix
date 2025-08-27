@@ -1,4 +1,8 @@
-{ nixpkgs }:
+{
+  nixpkgs,
+  treefmt-nix,
+  git-hooks-nix,
+}:
 
 # C# project builder with comprehensive reproducibility and buildDotnetModule integration
 #
@@ -13,46 +17,71 @@
 # - Development and release build variants with comprehensive checks
 #
 # Usage:
-#   csharp = import ./csharp.nix { inherit nixpkgs; };
-#   project = csharp { pkgs = nixpkgs.legacyPackages.${system}; self = ./.; buildTarget = "MyApp.sln"; };
+#   csharp = import ./csharp.nix { inherit nixpkgs treefmt-nix git-hooks-nix; };
+#   project = csharp { pkgs = nixpkgs.legacyPackages.${system}; self = ./.; buildTarget = "MyApp.sln"; inherit system; };
 #   # Use project.mkDefaultOutputs for complete flake integration
 #
 # Main function that creates C# project outputs for a single system
 {
   # Required parameters
-  pkgs, # Nixpkgs package set
-  self, # Source path/flake self
+  pkgs,
+  # Nixpkgs package set
+  self,
+  # Source path/flake self
   buildTarget, # Path to .csproj or .sln file (relative to src root)
 
   # SDK and build configuration
   sdk ? pkgs.dotnetCorePackages.sdk_8_0,
-  nugetDeps ? null, # Path to deps.json or derivation
+  nugetDeps ? null,
+  # Path to deps.json or derivation
   selfContainedBuild ? true,
-
   # Development environment customization
-  extraBuildTools ? [ ], # Additional build-time packages
+  extraBuildTools ? [ ],
+  # Additional build-time packages
   extraGeneralTools ? [ ], # Additional development packages
 
   # Test configuration
   enableTests ? true,
-  testProject ? null, # Optional explicit test project path (.csproj)
-  testFilters ? [ ], # Test filters for dotnet test --filter
+  testProject ? null,
+  # Optional explicit test project path (.csproj)
+  testFilters ? [ ],
+  # Test filters for dotnet test --filter
   disabledTests ? [ ], # Specific tests to disable
 
   # Build customization (buildDotnetModule parameters)
-  executables ? null, # null = install all, [] = install none, [...] = specific ones
-  runtimeDeps ? [ ], # Runtime library dependencies
-  dotnetBuildFlags ? [ ], # Additional build flags
-  dotnetTestFlags ? [ ], # Additional test flags
-  dotnetRestoreFlags ? [ ], # Additional restore flags
-  dotnetInstallFlags ? [ ], # Additional install flags
-  dotnetPackFlags ? [ ], # Additional pack flags
+  executables ? null,
+  # null = install all, [] = install none, [...] = specific ones
+  runtimeDeps ? [ ],
+  # Runtime library dependencies
+  dotnetBuildFlags ? [ ],
+  # Additional build flags
+  dotnetTestFlags ? [ ],
+  # Additional test flags
+  dotnetRestoreFlags ? [ ],
+  # Additional restore flags
+  dotnetInstallFlags ? [ ],
+  # Additional install flags
+  dotnetPackFlags ? [ ],
+  # Additional pack flags
   dotnetFlags ? [ ], # Flags applied to all dotnet commands
 
   # Reproducibility controls (always enabled for security/consistency)
-  sourceEpoch ? 1, # Timestamp for SOURCE_DATE_EPOCH
-  assemblyVersion ? null, # Override assembly version for deterministic builds
+  sourceEpoch ? 1,
+  # Timestamp for SOURCE_DATE_EPOCH
+  assemblyVersion ? null,
+  # Override assembly version for deterministic builds
   enforceCodeSigning ? false, # Enable code signing (disabled by default for reproducibility)
+
+  # Formatting and linting configuration
+  enableFormatting ? true,
+  # Enable treefmt integration for C# formatting
+  enableLinting ? true,
+  # Enable pre-commit hooks with linting
+  extraFormatters ? { },
+  # Additional formatters to configure in treefmt
+  extraPreCommitHooks ? { },
+  # Additional pre-commit hooks to configure
+  system, # System architecture (required for treefmt-nix and git-hooks-nix)
 }:
 
 let
@@ -214,10 +243,71 @@ let
   # Simple test detection: either explicit test project or solution file
   hasTests = enableTests && (testProject != null || nixpkgs.lib.hasSuffix ".sln" buildTarget);
 
+  # Configure treefmt for C# projects
+  treefmt = nixpkgs.lib.optionalAttrs enableFormatting (
+    treefmt-nix.lib.evalModule pkgs {
+      projectRootFile = "flake.nix";
+      programs = {
+        nixpkgs-fmt.enable = true;
+        prettier.enable = true;
+        # dotnet format would be handled via custom script since treefmt-nix doesn't natively support it
+      }
+      // extraFormatters;
+      settings.formatter = {
+        nixpkgs-fmt.excludes = [
+          "*.lock"
+          "deps.json"
+        ];
+        prettier.excludes = [
+          ".*\\.lock$"
+          "deps\\.json"
+          ".*\\.csproj$"
+          ".*\\.sln$"
+        ];
+      };
+    }
+  );
+
+  # Configure git hooks for C# projects
+  git-hooks = nixpkgs.lib.optionalAttrs enableLinting (
+    git-hooks-nix.lib.${system}.run {
+      src = self;
+      hooks = {
+        treefmt = nixpkgs.lib.mkIf enableFormatting {
+          enable = true;
+          package = treefmt.config.build.wrapper;
+        };
+        # C# specific hooks
+        dotnet-format = {
+          enable = true;
+          name = "dotnet format";
+          entry = "${sdk}/bin/dotnet format --verify-no-changes";
+          files = "\\.(cs|vb|fs)$";
+          pass_filenames = false;
+        };
+        nixpkgs-fmt.enable = true;
+        prettier = {
+          enable = true;
+          excludes = [
+            "deps\\.json"
+            ".*\\.lock$"
+            ".*\\.csproj$"
+            ".*\\.sln$"
+          ];
+        };
+      }
+      // extraPreCommitHooks;
+    }
+  );
+
   # Individual components for backward compatibility and extension
   devShell = pkgs.mkShell {
     packages = allGeneralTools ++ allBuildTools;
-    inherit shellHook;
+    shellHook =
+      shellHook
+      + nixpkgs.lib.optionalString enableLinting ''
+        ${git-hooks.shellHook}
+      '';
   };
 
   devApp = {
@@ -238,10 +328,54 @@ let
     };
   };
 
+  # Formatting and linting apps
+  formatApp = nixpkgs.lib.optionalAttrs enableFormatting {
+    type = "app";
+    program = "${treefmt.config.build.wrapper}/bin/treefmt";
+    meta = {
+      description = "Format ${name} project files";
+      platforms = nixpkgs.lib.platforms.all;
+    };
+  };
+
+  checkFormatApp = nixpkgs.lib.optionalAttrs enableFormatting {
+    type = "app";
+    program = "${treefmt.config.build.wrapper}/bin/treefmt --check";
+    meta = {
+      description = "Check formatting of ${name} project files";
+      platforms = nixpkgs.lib.platforms.all;
+    };
+  };
+
+  lintApp = {
+    type = "app";
+    program = pkgs.writeShellScript "lint-${name}" ''
+      set -euo pipefail
+      echo "Running C# linting checks..."
+      ${sdk}/bin/dotnet format --verify-no-changes --verbosity diagnostic
+      echo "Linting passed!"
+    '';
+    meta = {
+      description = "Lint ${name} C# code";
+      platforms = nixpkgs.lib.platforms.all;
+    };
+  };
+
   # Include checks - both dev and release builds (tests run via doCheck)
   checks = {
     build-dev = devPackage; # Tests run automatically if hasTests=true
     build-release = releasePackage; # Tests run automatically if hasTests=true
+  }
+  // nixpkgs.lib.optionalAttrs enableFormatting {
+    format-check = treefmt.config.build.check self;
+  }
+  // nixpkgs.lib.optionalAttrs enableLinting {
+    lint-check = pkgs.runCommand "lint-check-${name}" { buildInputs = [ sdk ]; } ''
+      cd ${self}
+      ${sdk}/bin/dotnet format --verify-no-changes --verbosity diagnostic
+      touch $out
+    '';
+    pre-commit-check = git-hooks;
   };
 
   # Default flake outputs structure - ready to use
@@ -253,7 +387,13 @@ let
     apps.default = devApp;
     apps.dev = devApp;
     apps.release = releaseApp;
+    apps.lint = lintApp;
     inherit checks;
+  }
+  // nixpkgs.lib.optionalAttrs enableFormatting {
+    formatter = treefmt.config.build.wrapper;
+    apps.format = formatApp;
+    apps.check-format = checkFormatApp;
   };
 
 in
@@ -265,10 +405,17 @@ in
     releasePackage # Release build derivation
     devApp # Debug app with meta
     releaseApp # Release app with meta
+    lintApp # Linting app
     checks # Build checks (dev + release with integrated tests)
     ;
 
+  # Formatting components (optional)
+  formatApp = if enableFormatting then formatApp else null;
+  checkFormatApp = if enableFormatting then checkFormatApp else null;
+  treefmt = if enableFormatting then treefmt else null;
+  git-hooks = if enableLinting then git-hooks else null;
+
   # Complete flake integration - recommended for most users
-  # Contains: devShells.default, packages.{default,dev,release}, apps.{default,dev,release}, checks
+  # Contains: devShells.default, packages.{default,dev,release}, apps.{default,dev,release,lint,format?}, checks, formatter?
   inherit mkDefaultOutputs;
 }
