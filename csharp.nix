@@ -243,40 +243,13 @@ let
   # Simple test detection: either explicit test project or solution file
   hasTests = enableTests && (testProject != null || nixpkgs.lib.hasSuffix ".sln" buildTarget);
 
-  # Configure treefmt for C# projects
-  treefmt = nixpkgs.lib.optionalAttrs enableFormatting (
-    treefmt-nix.lib.evalModule pkgs {
-      projectRootFile = "flake.nix";
-      programs = {
-        nixpkgs-fmt.enable = true;
-        prettier.enable = true;
-        # dotnet format would be handled via custom script since treefmt-nix doesn't natively support it
-      }
-      // extraFormatters;
-      settings.formatter = {
-        nixpkgs-fmt.excludes = [
-          "*.lock"
-          "deps.json"
-        ];
-        prettier.excludes = [
-          ".*\\.lock$"
-          "deps\\.json"
-          ".*\\.csproj$"
-          ".*\\.sln$"
-        ];
-      };
-    }
-  );
+  # Note: treefmt configuration removed - use main flake's `nix fmt` instead
 
   # Configure git hooks for C# projects
   git-hooks = nixpkgs.lib.optionalAttrs enableLinting (
     git-hooks-nix.lib.${system}.run {
       src = self;
       hooks = {
-        treefmt = nixpkgs.lib.mkIf enableFormatting {
-          enable = true;
-          package = treefmt.config.build.wrapper;
-        };
         # C# specific hooks
         dotnet-format = {
           enable = true;
@@ -285,16 +258,7 @@ let
           files = "\\.(cs|vb|fs)$";
           pass_filenames = false;
         };
-        nixpkgs-fmt.enable = true;
-        prettier = {
-          enable = true;
-          excludes = [
-            "deps\\.json"
-            ".*\\.lock$"
-            ".*\\.csproj$"
-            ".*\\.sln$"
-          ];
-        };
+        # Note: treefmt, nixpkgs-fmt, prettier hooks handled by main flake
       }
       // extraPreCommitHooks;
     }
@@ -328,21 +292,20 @@ let
     };
   };
 
-  # Formatting and linting apps
-  formatApp = nixpkgs.lib.optionalAttrs enableFormatting {
-    type = "app";
-    program = "${treefmt.config.build.wrapper}/bin/treefmt";
-    meta = {
-      description = "Format ${name} project files";
-      platforms = nixpkgs.lib.platforms.all;
-    };
-  };
+  # Formatting and linting apps (format app removed - use `nix fmt` instead)
 
   checkFormatApp = nixpkgs.lib.optionalAttrs enableFormatting {
     type = "app";
-    program = "${treefmt.config.build.wrapper}/bin/treefmt --check";
+    program = pkgs.writeShellScript "check-format-${name}" ''
+      set -euo pipefail
+      echo "Checking formatting of ${name} project files..."
+      echo "Use 'nix fmt --check' from the project root for universal format checking"
+      echo "Checking C# formatting specifically..."
+      ${sdk}/bin/dotnet format --verify-no-changes --verbosity diagnostic
+      echo "C# formatting check passed!"
+    '';
     meta = {
-      description = "Check formatting of ${name} project files";
+      description = "Check C# code formatting";
       platforms = nixpkgs.lib.platforms.all;
     };
   };
@@ -366,12 +329,14 @@ let
     build-dev = devPackage; # Tests run automatically if hasTests=true
     build-release = releasePackage; # Tests run automatically if hasTests=true
   }
-  // nixpkgs.lib.optionalAttrs enableFormatting {
-    format-check = treefmt.config.build.check self;
-  }
   // nixpkgs.lib.optionalAttrs enableLinting {
     lint-check = pkgs.runCommand "lint-check-${name}" { buildInputs = [ sdk ]; } ''
-      cd ${self}
+      # Copy source to a writable directory
+      cp -r ${self} ./source
+      chmod -R +w ./source
+      cd ./source
+
+      # Run dotnet format check
       ${sdk}/bin/dotnet format --verify-no-changes --verbosity diagnostic
       touch $out
     '';
@@ -391,8 +356,6 @@ let
     inherit checks;
   }
   // nixpkgs.lib.optionalAttrs enableFormatting {
-    formatter = treefmt.config.build.wrapper;
-    apps.format = formatApp;
     apps.check-format = checkFormatApp;
   };
 
@@ -409,13 +372,13 @@ in
     checks # Build checks (dev + release with integrated tests)
     ;
 
-  # Formatting components (optional)
-  formatApp = if enableFormatting then formatApp else null;
+  # Formatting components (optional) - formatApp removed, use `nix fmt` instead
   checkFormatApp = if enableFormatting then checkFormatApp else null;
-  treefmt = if enableFormatting then treefmt else null;
+  # treefmt removed - use main flake's `nix fmt` instead
   git-hooks = if enableLinting then git-hooks else null;
 
   # Complete flake integration - recommended for most users
-  # Contains: devShells.default, packages.{default,dev,release}, apps.{default,dev,release,lint,format?}, checks, formatter?
+  # Contains: devShells.default, packages.{default,dev,release}, apps.{default,dev,release,lint,check-format?}, checks
+  # Note: Use `nix fmt` for formatting instead of a dedicated format app
   inherit mkDefaultOutputs;
 }

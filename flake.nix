@@ -28,12 +28,27 @@
             nixpkgs-fmt.enable = true;
             prettier.enable = true;
           };
-          settings.formatter = {
-            nixpkgs-fmt.excludes = [ "*.lock" ];
-            prettier.excludes = [
-              "*.lock"
-              "deps.json"
-            ];
+          settings = {
+            formatter = {
+              nixpkgs-fmt.excludes = [ "*.lock" ];
+              prettier.excludes = [
+                "*.lock"
+                "deps.json"
+              ];
+              # Add custom C# formatter
+              dotnet-format = {
+                command = "${pkgs.dotnetCorePackages.sdk_8_0}/bin/dotnet";
+                options = [
+                  "format"
+                  "--include"
+                ];
+                includes = [
+                  "*.cs"
+                  "*.vb"
+                  "*.fs"
+                ];
+              };
+            };
           };
         };
 
