@@ -344,14 +344,18 @@ let
   };
 
   # Project-specific formatter for C# code
-  projectFormatter = nixpkgs.lib.optionalAttrs enableFormatting (
-    pkgs.writeShellScript "csharp-formatter" ''
-      set -euo pipefail
-      echo "Formatting C# code..."
-      ${sdk}/bin/dotnet format --verbosity minimal
-      echo "C# formatting complete!"
-    ''
-  );
+  projectFormatter =
+    if enableFormatting then
+      (pkgs.writeShellApplication {
+        name = "csharp-formatter";
+        text = ''
+          echo "Formatting C# code..."
+          ${sdk}/bin/dotnet format --verbosity minimal
+          echo "C# formatting complete!"
+        '';
+      })
+    else
+      null;
 
   # Default flake outputs structure - ready to use
   mkDefaultOutputs = {
