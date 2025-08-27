@@ -179,9 +179,9 @@ test_project_functionality() {
     echo -e "${YELLOW}📋 QUALITY ASSURANCE${NC}"
     echo "$(printf '%.0s-' {1..50})"
 
-    # Test comprehensive checks (dry-run to avoid long build times)
+    # Test comprehensive checks (evaluation only to avoid long build times)
     run_test "nix flake check (comprehensive)" \
-        "nix flake check --dry-run 2>/dev/null && echo 'ALL_CHECKS_PASSED'" \
+        "nix flake check 2>/dev/null && echo 'ALL_CHECKS_PASSED'" \
         "ALL_CHECKS_PASSED"
 
     # Test pre-commit integration

@@ -117,7 +117,7 @@ main() {
         "devShells"
 
     run_test "flake check evaluation" \
-        "nix flake check --dry-run 2>/dev/null" \
+        "nix flake check 2>/dev/null" \
         ""
 
     # Test universal formatting

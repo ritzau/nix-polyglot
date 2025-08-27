@@ -191,7 +191,7 @@ test_integration() {
 
     # Test that all checks can at least be evaluated
     run_test "checks evaluable" \
-        "nix flake check --dry-run 2>/dev/null >/dev/null && echo 'EVALUABLE'" \
+        "nix flake check 2>/dev/null >/dev/null && echo 'EVALUABLE'" \
         "EVALUABLE"
 
     echo ""

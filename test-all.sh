@@ -118,7 +118,7 @@ test_main_flake() {
         "devShells"
 
     run_test "flake check evaluation" \
-        "timeout 60s nix flake check --dry-run 2>/dev/null" \
+        "nix flake check 2>/dev/null" \
         ""
 
     # Test universal formatting (main flake)
