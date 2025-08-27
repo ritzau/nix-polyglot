@@ -43,13 +43,13 @@ run_test() {
     local test_name="$1"
     local test_command="$2"
     local expected_output="$3"
-    local timeout="${4:-30}"
+    # timeout removed for compatibility
 
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
     echo -n "Testing $test_name... "
 
-    if timeout "${timeout}s" bash -c "$test_command" >/tmp/test_output 2>&1; then
+    if bash -c "$test_command" >/tmp/test_output 2>&1; then
         if [[ -n "$expected_output" ]]; then
             if grep -q "$expected_output" /tmp/test_output; then
                 echo -e "${GREEN}✅ PASS${NC}"
@@ -86,7 +86,7 @@ run_evaluation_test() {
 
     echo -n "Testing $test_name... "
 
-    if result=$(timeout 15s bash -c "$test_command" 2>/dev/null); then
+    if result=$(bash -c "$test_command" 2>/dev/null); then
         count=$(echo "$result" | grep -o '"[^"]*"' | wc -l | tr -d ' ')
         if [[ "$count" -eq "$expected_count" ]]; then
             echo -e "${GREEN}✅ PASS (found $count items)${NC}"
@@ -123,7 +123,7 @@ test_main_flake() {
 
     # Test universal formatting (main flake)
     run_test "universal formatting (main flake)" \
-        "timeout 30s nix fmt 2>/dev/null && echo 'FORMAT_SUCCESS'" \
+        "nix fmt 2>/dev/null && echo 'FORMAT_SUCCESS'" \
         "FORMAT_SUCCESS"
 
     # Test development shell
@@ -161,11 +161,11 @@ test_csharp_sample() {
     # Test all apps
     run_test "default app (dev)" \
         "nix run 2>/dev/null | head -1" \
-        "Hello, World from C#"
+        "Hello, World from C#!"
 
     run_test "release app" \
         "nix run .#release 2>/dev/null | head -1" \
-        "Hello, World from C#"
+        "Hello, World from C#!"
 
     run_test "lint app" \
         "nix run .#lint 2>/dev/null" \
@@ -205,7 +205,7 @@ test_csharp_sample() {
 
     # Test project-specific formatting
     run_test "project formatting (nix fmt)" \
-        "timeout 60s nix fmt 2>/dev/null && echo 'PROJECT_FORMAT_SUCCESS'" \
+        "nix fmt 2>/dev/null && echo 'PROJECT_FORMAT_SUCCESS'" \
         "PROJECT_FORMAT_SUCCESS" \
         60
 
@@ -239,7 +239,7 @@ test_architecture_features() {
 
     # Test flake checks (comprehensive test)
     run_test "comprehensive flake checks" \
-        "timeout 120s nix flake check 2>/dev/null && echo 'ALL_CHECKS_PASSED'" \
+        "nix flake check 2>/dev/null && echo 'ALL_CHECKS_PASSED'" \
         "ALL_CHECKS_PASSED" \
         120
 
