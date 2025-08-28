@@ -153,6 +153,18 @@
                 platforms = nixpkgs.lib.platforms.all;
               };
             };
+
+            # Template formatting playbook
+            format-templates = {
+              type = "app";
+              program = "${pkgs.writeShellScript "format-templates" ''
+                exec ${./scripts/format-templates.sh} "$@"
+              ''}";
+              meta = {
+                description = "Format all template files using their development environments";
+                platforms = nixpkgs.lib.platforms.all;
+              };
+            };
           };
 
           # Checks
