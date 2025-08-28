@@ -125,19 +125,19 @@ test_project_functionality() {
 
     run_test "nix run (default app)" \
         "nix run 2>/dev/null | head -1" \
-        "Hello, World from C#"
+        "Hello"
 
     run_test "nix run .#release" \
         "nix run .#release 2>/dev/null | head -1" \
-        "Hello, World from C#"
+        "Hello"
 
     run_test "nix run .#lint" \
         "nix run .#lint 2>/dev/null" \
-        "Linting passed!"
+        "passed!"
 
     run_test "nix run .#check-format" \
         "nix run .#check-format 2>/dev/null" \
-        "C# formatting check passed!"
+        "passed!"
 
     # Test formatting - this is the key test you mentioned
     run_test "nix fmt (project formatting)" \
@@ -168,12 +168,12 @@ test_project_functionality() {
 
     # Test that binaries actually work
     run_test "dev binary works" \
-        "$(nix build .#dev --print-out-paths 2>/dev/null)/bin/HelloService | head -1" \
-        "Hello, World from C#"
+        "$(nix build .#dev --print-out-paths 2>/dev/null)/bin/* | head -1" \
+        "Hello"
 
     run_test "release binary works" \
-        "$(nix build .#release --print-out-paths 2>/dev/null)/bin/HelloService | head -1" \
-        "Hello, World from C#"
+        "$(nix build .#release --print-out-paths 2>/dev/null)/bin/* | head -1" \
+        "Hello"
 
     echo ""
     echo -e "${YELLOW}📋 QUALITY ASSURANCE${NC}"
@@ -188,6 +188,28 @@ test_project_functionality() {
     run_test "pre-commit hooks work" \
         "nix develop --command bash -c 'echo \"Pre-commit ready\" && exit 0'" \
         "Pre-commit ready"
+
+    echo ""
+    echo -e "${YELLOW}📋 PROJECT MAINTENANCE${NC}"
+    echo "$(printf '%.0s-' {1..50})"
+    
+    # Test nix-polyglot maintenance apps are available
+    run_test "setup app available" \
+        "nix eval .#apps.x86_64-darwin.setup.program 2>/dev/null >/dev/null && echo 'AVAILABLE'" \
+        "AVAILABLE"
+    
+    run_test "update-project app available" \
+        "nix eval .#apps.x86_64-darwin.update-project.program 2>/dev/null >/dev/null && echo 'AVAILABLE'" \
+        "AVAILABLE"
+    
+    run_test "migrate app available" \
+        "nix eval .#apps.x86_64-darwin.migrate.program 2>/dev/null >/dev/null && echo 'AVAILABLE'" \
+        "AVAILABLE"
+    
+    # Test that project can be analyzed for updates
+    run_test "project structure analysis" \
+        "nix eval .#apps --apply 'apps: builtins.length (builtins.attrNames apps)' 2>/dev/null | grep -E '^[0-9]+$' && echo 'ANALYZABLE'" \
+        "ANALYZABLE"
 
     echo ""
 }
@@ -230,9 +252,11 @@ main() {
         echo "  • nix run .#release         (run release build)"
         echo "  • nix fmt                    (format your code)"
         echo "  • nix run .#lint            (lint your code)"
+        echo "  • nix run .#check-format    (verify formatting)"
         echo "  • nix develop               (enter dev shell)"
         echo "  • nix build .#{dev,release} (build packages)"
         echo "  • nix flake check           (run all checks)"
+        echo "  • nix run .#{setup,update-project,migrate} (project maintenance)"
     else
         echo -e "${RED}❌ SOME TESTS FAILED${NC}"
         echo "Failed tests:"

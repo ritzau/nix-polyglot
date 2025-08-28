@@ -9,6 +9,7 @@ Templates need to be properly formatted, but the main nix-polyglot repository do
 ## Solution
 
 We use a **formatting playbook** that:
+
 1. Generates temporary projects from each template
 2. Enters each project's `nix develop` environment
 3. Runs the project's native formatters (`just fmt`, `nix fmt`)
@@ -46,7 +47,7 @@ The playbook:
    - Creates a temporary project using the template
    - Updates the flake to use local nix-polyglot
    - Enters `nix develop` environment
-   - Runs `just fmt` or `nix fmt` 
+   - Runs `just fmt` or `nix fmt`
    - Copies formatted files back to the template directory
 4. **Shows a summary** of results
 5. **Reminds you to commit** the changes
