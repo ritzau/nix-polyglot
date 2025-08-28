@@ -112,7 +112,7 @@ test_project_functionality() {
     # Test flake outputs structure
     run_evaluation_test "app outputs available" \
         "nix eval .#apps.x86_64-darwin --apply 'builtins.attrNames' 2>/dev/null" \
-        "5"
+        "8"
 
     run_evaluation_test "package outputs available" \
         "nix eval .#packages.x86_64-darwin --apply 'builtins.attrNames' 2>/dev/null" \

@@ -22,6 +22,12 @@
         let
           pkgs = import nixpkgs { inherit system; };
 
+          # Import core script system
+          scripts = import ./lib/scripts.nix { inherit pkgs; };
+
+          # Import template system
+          templates = import ./lib/templates.nix { inherit pkgs; };
+
           # Configure treefmt for universal formatting
           treefmt = treefmt-nix.lib.evalModule pkgs {
             projectRootFile = "flake.nix";
@@ -87,6 +93,61 @@
           # Formatter support
           formatter = treefmt.config.build.wrapper;
 
+          # Apps for project setup and maintenance
+          apps = {
+            # Project creation templates
+            new-csharp = {
+              type = "app";
+              program = "${templates.csharp}/bin/new-csharp-project";
+              meta = {
+                description = "Create a new C# project with nix-polyglot";
+                platforms = nixpkgs.lib.platforms.all;
+              };
+            };
+            new-rust = {
+              type = "app";
+              program = "${templates.rust}/bin/new-rust-project";
+              meta = {
+                description = "Create a new Rust project with nix-polyglot";
+                platforms = nixpkgs.lib.platforms.all;
+              };
+            };
+            templates = {
+              type = "app";
+              program = "${templates.listTemplates}/bin/list-nix-polyglot-templates";
+              meta = {
+                description = "List available project templates";
+                platforms = nixpkgs.lib.platforms.all;
+              };
+            };
+
+            # Project maintenance
+            setup = {
+              type = "app";
+              program = "${scripts.setupScript}/bin/setup-nix-polyglot-project";
+              meta = {
+                description = "Set up a project to use modern nix-polyglot architecture";
+                platforms = nixpkgs.lib.platforms.all;
+              };
+            };
+            update-project = {
+              type = "app";
+              program = "${scripts.updateScript}/bin/update-nix-polyglot-project";
+              meta = {
+                description = "Update project to latest nix-polyglot functionality";
+                platforms = nixpkgs.lib.platforms.all;
+              };
+            };
+            migrate = {
+              type = "app";
+              program = "${scripts.migrationScript}/bin/migrate-to-nix-polyglot";
+              meta = {
+                description = "Migrate legacy project to modern nix-polyglot";
+                platforms = nixpkgs.lib.platforms.all;
+              };
+            };
+          };
+
           # Checks
           checks = {
             pre-commit-check = git-hooks;
@@ -108,6 +169,13 @@
         buildHooks =
           system:
           import ./lib/build-hooks.nix {
+            pkgs = import nixpkgs { inherit system; };
+          };
+
+        # Expose script system for projects to import
+        scripts =
+          system:
+          import ./lib/scripts.nix {
             pkgs = import nixpkgs { inherit system; };
           };
 

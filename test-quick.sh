@@ -121,6 +121,19 @@ test_main_flake() {
         "nix eval .#formatter 2>/dev/null >/dev/null && echo 'AVAILABLE'" \
         "AVAILABLE"
 
+    # Test Phase 2 template apps
+    run_test "template system available" \
+        "nix eval .#apps.x86_64-darwin.templates 2>/dev/null >/dev/null && echo 'AVAILABLE'" \
+        "AVAILABLE"
+
+    run_test "new-csharp template available" \
+        "nix eval .#apps.x86_64-darwin.new-csharp 2>/dev/null >/dev/null && echo 'AVAILABLE'" \
+        "AVAILABLE"
+
+    run_test "new-rust template available" \
+        "nix eval .#apps.x86_64-darwin.new-rust 2>/dev/null >/dev/null && echo 'AVAILABLE'" \
+        "AVAILABLE"
+
     echo ""
 }
 
@@ -140,10 +153,10 @@ test_csharp_project() {
         return 1
     fi
 
-    # Test project structure
+    # Test project structure (now includes Phase 2 apps: setup, update-project, migrate)
     run_count_test "apps available" \
         "nix eval .#apps.x86_64-darwin --apply 'builtins.attrNames' 2>/dev/null" \
-        "5"
+        "8"
 
     run_count_test "packages available" \
         "nix eval .#packages.x86_64-darwin --apply 'builtins.attrNames' 2>/dev/null" \
@@ -168,6 +181,19 @@ test_csharp_project() {
 
     run_test "dev shell defined" \
         "nix eval .#devShells.x86_64-darwin.default 2>/dev/null >/dev/null && echo 'DEFINED'" \
+        "DEFINED"
+
+    # Test Phase 2 project maintenance apps
+    run_test "setup app defined" \
+        "nix eval .#apps.x86_64-darwin.setup 2>/dev/null >/dev/null && echo 'DEFINED'" \
+        "DEFINED"
+
+    run_test "update-project app defined" \
+        "nix eval .#apps.x86_64-darwin.update-project 2>/dev/null >/dev/null && echo 'DEFINED'" \
+        "DEFINED"
+
+    run_test "migrate app defined" \
+        "nix eval .#apps.x86_64-darwin.migrate 2>/dev/null >/dev/null && echo 'DEFINED'" \
         "DEFINED"
 
     # Test one actual run (quick)
@@ -216,7 +242,9 @@ print_summary() {
         echo ""
         echo "✅ Verified functionality:"
         echo "  • Library structure and exports"
-        echo "  • Project flake outputs (5 apps, 3 packages)"
+        echo "  • Template system (new-csharp, new-rust, templates list)"
+        echo "  • Project flake outputs (8 apps, 3 packages)"
+        echo "  • Project maintenance apps (setup, update-project, migrate)"
         echo "  • App definitions and executability"
         echo "  • Dev vs Release build differences"
         echo "  • Development shell and formatter"

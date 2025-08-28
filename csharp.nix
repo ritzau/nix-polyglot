@@ -270,6 +270,9 @@ let
     }
   );
 
+  # Import script system for project templates and maintenance
+  scripts = import ./lib/scripts.nix { inherit pkgs; };
+
   # Individual components for backward compatibility and extension
   devShell = pkgs.mkShell {
     packages = allGeneralTools ++ allBuildTools;
@@ -374,6 +377,32 @@ let
       dev = devApp;
       release = releaseApp;
       lint = lintApp;
+
+      # Project management and maintenance apps
+      setup = {
+        type = "app";
+        program = "${scripts.setupScript}/bin/setup-nix-polyglot-project";
+        meta = {
+          description = "Set up project with modern nix-polyglot architecture";
+          platforms = nixpkgs.lib.platforms.all;
+        };
+      };
+      update-project = {
+        type = "app";
+        program = "${scripts.updateScript}/bin/update-nix-polyglot-project";
+        meta = {
+          description = "Update project to latest nix-polyglot functionality";
+          platforms = nixpkgs.lib.platforms.all;
+        };
+      };
+      migrate = {
+        type = "app";
+        program = "${scripts.migrationScript}/bin/migrate-to-nix-polyglot";
+        meta = {
+          description = "Migrate legacy project to modern architecture";
+          platforms = nixpkgs.lib.platforms.all;
+        };
+      };
     }
     // nixpkgs.lib.optionalAttrs enableFormatting {
       check-format = checkFormatApp;
@@ -403,8 +432,11 @@ in
   # treefmt removed - use main flake's `nix fmt` instead
   git-hooks = if enableLinting then git-hooks else null;
 
+  # Script system for maintenance-free project management
+  inherit scripts;
+
   # Complete flake integration - recommended for most users
-  # Contains: devShells.default, packages.{default,dev,release}, apps.{default,dev,release,lint,check-format?}, checks
+  # Contains: devShells.default, packages.{default,dev,release}, apps.{default,dev,release,lint,check-format?,setup,update-project,migrate}, checks
   # Note: Use `nix fmt` for formatting instead of a dedicated format app
   inherit mkDefaultOutputs;
 }

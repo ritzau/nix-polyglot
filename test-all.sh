@@ -134,7 +134,12 @@ test_main_flake() {
     # Test library exports
     run_evaluation_test "lib exports available" \
         "nix eval .#lib --apply builtins.attrNames" \
-        "6"
+        "7"
+
+    # Test Phase 2 template system
+    run_test "template listing works" \
+        "nix run .#templates 2>/dev/null | head -1" \
+        "🚀 Available nix-polyglot project templates:"
 
     echo ""
 }
@@ -149,10 +154,10 @@ test_csharp_sample() {
     rm -f flake.lock
     nix flake lock --allow-dirty-locks --impure >/dev/null 2>&1
 
-    # Test flake outputs structure
+    # Test flake outputs structure (now includes Phase 2 apps: setup, update-project, migrate)
     run_evaluation_test "app outputs count" \
         "nix eval .#apps.x86_64-darwin --apply 'builtins.attrNames' 2>/dev/null" \
-        "5"
+        "8"
 
     run_evaluation_test "package outputs count" \
         "nix eval .#packages.x86_64-darwin --apply 'builtins.attrNames' 2>/dev/null" \
