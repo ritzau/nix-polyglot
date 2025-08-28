@@ -12,10 +12,8 @@
     "flake.nix" = ./flake.nix;
     "MyApp.csproj" = ./MyApp.csproj;
     "Program.cs" = ./Program.cs;
-    "generate-deps.py" = ./generate-deps.py;
     "justfile" = ./justfile;
     ".gitignore" = ./.gitignore;
     ".editorconfig" = ./.editorconfig;
-    "deps.json" = ./deps.json;
   };
 }

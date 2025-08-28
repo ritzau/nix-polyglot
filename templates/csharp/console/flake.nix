@@ -19,7 +19,7 @@
         csharpProject = nix-polyglot.lib.csharp {
           inherit pkgs self system;
           buildTarget = "./MyApp.csproj";
-          nugetDeps = ./deps.json; # Generate with: python3 generate-deps.py
+          nugetDeps = null; # No external dependencies for console app
         };
       in
       # Use the complete project structure

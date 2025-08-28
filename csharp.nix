@@ -133,8 +133,8 @@ let
     else
       baseName;
 
-  # Common build configuration
-  commonBuildConfig = {
+  # Base configuration shared by both builds
+  baseConfig = {
     inherit name;
     src = self;
     projectFile = buildTarget;
@@ -147,8 +147,45 @@ let
 
     # Test configuration - use testProjectFile if provided, otherwise use doCheck
     testProjectFile = if hasTests && testProject != null then testProject else null;
+  };
 
-    # Reproducibility controls (always enabled)
+  # Fast development build configuration - optimized for speed and iteration
+  devBuildConfig = baseConfig // {
+    # Minimal environment for fast builds - no reproducibility controls
+    env = {
+      # Only essential settings for dev builds
+      DOTNET_CLI_TELEMETRY_OPTOUT = "1";
+      DOTNET_NOLOGO = "1";
+      # Allow normal user caches and configs for speed
+    };
+
+    # Minimal build flags for fast development iteration
+    dotnetBuildFlags = [
+      # Enable debug symbols and information
+      "/p:DebugType=portable"
+      "/p:DebugSymbols=true"
+      # Skip assembly versioning in dev builds for speed
+    ]
+    ++ (nixpkgs.lib.optionals (!enforceCodeSigning) [
+      "/p:SignAssembly=false"
+      "/p:DelaySign=false"
+    ])
+    ++ dotnetBuildFlags;
+
+    # Fast restore with full caching enabled
+    dotnetRestoreFlags = [
+      # Enable all caches and optimizations for speed
+    ]
+    ++ dotnetRestoreFlags;
+
+    # Build and install hooks
+    preBuild = buildHooks.buildPhaseHook;
+    preInstall = buildHooks.installPhaseHook;
+  };
+
+  # Reproducible release build configuration - optimized for deterministic output
+  releaseBuildConfig = baseConfig // {
+    # Full reproducibility controls
     env = {
       # Ensure consistent timezone and locale
       TZ = "UTC";
@@ -170,12 +207,12 @@ let
       SOURCE_DATE_EPOCH = toString sourceEpoch;
       DETERMINISTIC_BUILD = "true";
 
-      # Disable user-specific caches and configs
+      # Disable user-specific caches and configs for reproducibility
       NUGET_PACKAGES = "$TMPDIR/nuget-packages";
       DOTNET_CLI_HOME = "$TMPDIR/dotnet-home";
     };
 
-    # Combine user flags with reproducibility flags
+    # Full reproducibility flags
     dotnetBuildFlags = [
       "/p:Deterministic=true"
       "/p:ContinuousIntegrationBuild=true"
@@ -194,54 +231,40 @@ let
     ])
     ++ dotnetBuildFlags;
 
+    # Reproducible restore flags
     dotnetRestoreFlags = [
       "--no-cache"
       "--locked-mode" # Fail if package lock file is out of date
-      "--force-evaluate" # Force re-evaluation of all dependencies
     ]
     ++ dotnetRestoreFlags;
 
-    # Other dotnet flags passed through
-    inherit
-      dotnetTestFlags
-      dotnetInstallFlags
-      dotnetPackFlags
-      dotnetFlags
-      ;
-
-    buildInputs = [ pkgs.fastfetch ];
-    preUnpack =
-      buildHooks.systemInfoHook
-      + buildHooks.versionHook {
-        command = "dotnet --version";
-        label = "Dotnet version";
-      };
+    # Build and install hooks  
     preBuild = buildHooks.buildPhaseHook;
     preInstall = buildHooks.installPhaseHook;
   };
 
-  # Dev build - uses dotnet build with Debug configuration
+  # Dev build - fast iteration with debug info
   devPackage = pkgs.buildDotnetModule (
-    commonBuildConfig
+    devBuildConfig
     // {
       name = "${name}-dev";
       buildType = "Debug";
-      doCheck = hasTests;
+      doCheck = false; # Skip tests in dev builds for speed
       preBuild = buildHooks.buildPhaseHook + ''
-        echo "Building dev variant with Debug configuration"
+        echo "🚀 Building dev variant (fast iteration with debug info)"
       '';
     }
   );
 
-  # Release build - uses dotnet build with Release configuration
+  # Release build - reproducible production build
   releasePackage = pkgs.buildDotnetModule (
-    commonBuildConfig
+    releaseBuildConfig
     // {
       name = "${name}-release";
       buildType = "Release";
       doCheck = hasTests;
       preBuild = buildHooks.buildPhaseHook + ''
-        echo "Building release variant with Release configuration"
+        echo "📦 Building release variant (reproducible production build)"
       '';
     }
   );

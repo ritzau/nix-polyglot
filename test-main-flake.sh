@@ -171,7 +171,7 @@ test_templates() {
     
     # Test main template variants (quick validation)
     local repo_root="$(pwd)"
-    test_template_generation "csharp-console" "new-csharp" "flake.nix,Program.cs,MyApp.csproj,justfile,deps.json" "$repo_root"
+    test_template_generation "csharp-console" "new-csharp" "flake.nix,Program.cs,MyApp.csproj,justfile" "$repo_root"
     test_template_generation "rust-cli" "new-rust" "flake.nix,src/main.rs,Cargo.toml,Cargo.lock,justfile" "$repo_root"
     
     # Verify explicit variants are available
