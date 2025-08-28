@@ -1,0 +1,28 @@
+# Nix
+result
+result-*
+
+# .NET
+bin/
+obj/
+packages.lock.json
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+.temp/
+.tmp/

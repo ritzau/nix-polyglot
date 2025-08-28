@@ -1,0 +1,76 @@
+# Modern Nix-Polyglot Justfile
+# This file delegates to nix commands - updates automatically with flake updates
+# No manual maintenance required - core functionality comes from nix-polyglot
+
+# Default recipe - shows available commands
+default:
+    @just --list
+
+# Start development environment
+dev:
+    @echo "🚀 Start development environment..."
+    nix develop
+
+# Build project
+build:
+    @echo "🔨 Build project..."
+    nix build
+
+# Run project
+run:
+    @echo "▶️  Run project..."
+    nix run
+
+# Run release version
+release:
+    @echo "🎯 Run release version..."
+    nix run .#release
+
+# Run all tests and checks
+test:
+    @echo "🧪 Run all tests and checks..."
+    nix flake check
+
+# Format all code (universal formatter)
+fmt:
+    @echo "🎨 Format all code (universal formatter)..."
+    nix fmt
+
+# Check formatting without changes
+fmt-check:
+    @echo "🔍 Check formatting without changes..."
+    nix fmt -- --fail-on-change
+
+# Run linting checks
+lint:
+    @echo "🔍 Run linting checks..."
+    nix run .#lint
+
+# Verify code formatting
+check-format:
+    @echo "✅ Verify code formatting..."
+    nix run .#check-format
+
+# Comprehensive check - build + test + lint + format
+check: build test lint fmt-check
+    @echo "✅ All checks passed!"
+
+# Clean build artifacts
+clean:
+    @echo "🧹 Clean build artifacts..."
+    nix-collect-garbage && rm -rf result result-*
+
+# Update all dependencies
+update:
+    @echo "📦 Update all dependencies..."
+    nix flake update
+
+# Regenerate NuGet dependencies
+update-nuget:
+    @echo "📦 Regenerating NuGet dependencies..."
+    @python3 generate-deps.py
+
+# Show project information
+info:
+    @echo "📋 Show project information..."
+    nix flake show
