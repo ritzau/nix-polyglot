@@ -42,19 +42,8 @@
                   "*.lock"
                   "deps.json"
                 ];
-                # Add custom C# formatter
-                dotnet-format = {
-                  command = "${pkgs.dotnetCorePackages.sdk_8_0}/bin/dotnet";
-                  options = [
-                    "format"
-                    "--include"
-                  ];
-                  includes = [
-                    "*.cs"
-                    "*.vb"
-                    "*.fs"
-                  ];
-                };
+                # Note: C# formatting is handled per-project in generated projects
+                # No C# files exist in the main nix-polyglot repo
               };
             };
           };
@@ -95,20 +84,38 @@
 
           # Apps for project setup and maintenance
           apps = {
-            # Project creation templates
+            # Project creation templates (legacy aliases)
             new-csharp = {
               type = "app";
-              program = "${templates.csharp}/bin/new-csharp-project";
+              program = "${templates.csharp}/bin/new-csharp-console-project";
               meta = {
-                description = "Create a new C# project with nix-polyglot";
+                description = "Create a new C# console project with nix-polyglot";
                 platforms = nixpkgs.lib.platforms.all;
               };
             };
             new-rust = {
               type = "app";
-              program = "${templates.rust}/bin/new-rust-project";
+              program = "${templates.rust}/bin/new-rust-cli-project";
               meta = {
-                description = "Create a new Rust project with nix-polyglot";
+                description = "Create a new Rust CLI project with nix-polyglot";
+                platforms = nixpkgs.lib.platforms.all;
+              };
+            };
+
+            # Explicit template apps
+            new-csharp-console = {
+              type = "app";
+              program = "${templates.csharp-console}/bin/new-csharp-console-project";
+              meta = {
+                description = "Create a new C# console application";
+                platforms = nixpkgs.lib.platforms.all;
+              };
+            };
+            new-rust-cli = {
+              type = "app";
+              program = "${templates.rust-cli}/bin/new-rust-cli-project";
+              meta = {
+                description = "Create a new Rust CLI application";
                 platforms = nixpkgs.lib.platforms.all;
               };
             };
