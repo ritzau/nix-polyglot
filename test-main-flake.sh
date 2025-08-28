@@ -103,6 +103,7 @@ test_template_generation() {
     local template_name="$1"
     local template_app="$2"
     local expected_files="$3"
+    local repo_root="$4"
     local test_dir="/tmp/test-template-${template_name}-$$"
     
     echo -e "${YELLOW}📋 Testing $template_name template${NC}"
@@ -131,7 +132,7 @@ test_template_generation() {
     done
     
     # Update flake to use local nix-polyglot
-    sed -i '' 's|github:your-org/nix-polyglot|path:'$(pwd)'/..|g' flake.nix || true
+    sed -i '' 's|github:your-org/nix-polyglot|path:'"$repo_root"'|g' flake.nix || true
     
     # Test generated project structure and quick validation
     run_test "$template_name: flake structure valid" \
@@ -139,11 +140,11 @@ test_template_generation() {
         "VALID"
     
     run_test "$template_name: apps available" \
-        "nix eval .#apps.x86_64-darwin --apply 'builtins.length (builtins.attrNames)' 2>/dev/null | grep -E '^[0-9]+$' && echo 'APPS_AVAILABLE'" \
+        "nix eval .#apps.x86_64-darwin --apply 'builtins.attrNames' 2>/dev/null | grep -q '\"default\"' && echo 'APPS_AVAILABLE'" \
         "APPS_AVAILABLE"
     
     run_test "$template_name: packages available" \
-        "nix eval .#packages.x86_64-darwin --apply 'builtins.length (builtins.attrNames)' 2>/dev/null | grep -E '^[0-9]+$' && echo 'PACKAGES_AVAILABLE'" \
+        "nix eval .#packages.x86_64-darwin --apply 'builtins.attrNames' 2>/dev/null | grep -q '\"dev\"' && echo 'PACKAGES_AVAILABLE'" \
         "PACKAGES_AVAILABLE"
     
     # Test development environment works  
@@ -169,8 +170,9 @@ test_templates() {
         "🚀 Available nix-polyglot project templates:"
     
     # Test main template variants (quick validation)
-    test_template_generation "csharp-console" "new-csharp" "flake.nix,Program.cs,MyApp.csproj,justfile,deps.json"
-    test_template_generation "rust-cli" "new-rust" "flake.nix,src/main.rs,Cargo.toml,Cargo.lock,justfile"
+    local repo_root="$(pwd)"
+    test_template_generation "csharp-console" "new-csharp" "flake.nix,Program.cs,MyApp.csproj,justfile,deps.json" "$repo_root"
+    test_template_generation "rust-cli" "new-rust" "flake.nix,src/main.rs,Cargo.toml,Cargo.lock,justfile" "$repo_root"
     
     # Verify explicit variants are available
     run_test "explicit csharp template available" \
