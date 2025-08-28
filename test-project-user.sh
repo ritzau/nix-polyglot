@@ -166,13 +166,13 @@ test_project_functionality() {
         "nix develop --command bash -c 'which dotnet && which fastfetch && echo TOOLS_AVAILABLE'" \
         "TOOLS_AVAILABLE"
 
-    # Test that binaries actually work
+    # Test that binaries actually work (avoid createdump and library files)
     run_test "dev binary works" \
-        "$(nix build .#dev --print-out-paths 2>/dev/null)/bin/* | head -1" \
+        "BINPATH=\$(nix build .#dev --print-out-paths 2>/dev/null)/bin; BINARY=\$(ls \$BINPATH | grep -v '^c' | grep -v '\\.dylib\$' | head -1); \$BINPATH/\$BINARY | head -1" \
         "Hello"
 
     run_test "release binary works" \
-        "$(nix build .#release --print-out-paths 2>/dev/null)/bin/* | head -1" \
+        "BINPATH=\$(nix build .#release --print-out-paths 2>/dev/null)/bin; BINARY=\$(ls \$BINPATH | grep -v '^c' | grep -v '\\.dylib\$' | head -1); \$BINPATH/\$BINARY | head -1" \
         "Hello"
 
     echo ""
