@@ -66,8 +66,27 @@
               };
             };
           };
+          # Build glot CLI
+          glot = pkgs.buildGoModule {
+            pname = "glot";
+            version = "1.2.0";
+            src = ./src/glot;
+            vendorHash = null; # no external dependencies
+            meta = with pkgs.lib; {
+              description = "Nix Polyglot Project Interface CLI";
+              homepage = "https://github.com/ritzau/nix-polyglot";
+              license = licenses.mit;
+              platforms = platforms.unix;
+            };
+          };
         in
         {
+          # Packages
+          packages = {
+            inherit glot;
+            default = glot;
+          };
+
           # Development shell for the nix-polyglot repo itself
           devShells.default = pkgs.mkShell {
             packages = with pkgs; [
