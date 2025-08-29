@@ -256,10 +256,77 @@ let
   # Select app based on buildType parameter
   app = if buildType == "release" then releaseApp else devApp;
 
+  # Linting and formatting apps
+  lintApp = {
+    type = "app";
+    program = "${pkgs.writeShellScript "lint-${packageName}" ''
+      set -euo pipefail
+      echo "Running Rust linting checks..."
+      
+      echo "🦀 Running clippy..."
+      ${pkgs.clippy}/bin/cargo-clippy clippy -- -D warnings
+      
+      echo "Rust linting passed!"
+    ''}";
+    meta = {
+      description = "Lint ${packageName} Rust code";
+      platforms = nixpkgs.lib.platforms.all;
+    };
+  };
+
+  checkFormatApp = {
+    type = "app";
+    program = "${pkgs.writeShellScript "check-format-${packageName}" ''
+      set -euo pipefail
+      echo "Checking formatting of ${packageName} Rust files..."
+      
+      echo "🦀 Checking with rustfmt..."
+      ${pkgs.rustfmt}/bin/rustfmt --check src/**/*.rs
+      
+      echo "Rust formatting check passed!"
+    ''}";
+    meta = {
+      description = "Check Rust code formatting";
+      platforms = nixpkgs.lib.platforms.all;
+    };
+  };
+
+  # Import script system for project templates and maintenance
+  scripts = import ./lib/scripts.nix { inherit pkgs; };
+
   # Comprehensive checks system
   checks = {
     build-dev = devPackage;
     build-release = releasePackage;
+    format-check = pkgs.runCommand "format-check-${packageName}"
+      {
+        buildInputs = [ pkgs.rustfmt ];
+      } ''
+      # Copy source to writable directory
+      cp -r ${self} ./source
+      chmod -R +w ./source
+      cd ./source
+
+      # Check Rust formatting
+      ${pkgs.rustfmt}/bin/rustfmt --check src/**/*.rs
+      
+      touch $out
+    '';
+    lint-check = pkgs.runCommand "lint-check-${packageName}"
+      {
+        buildInputs = [ pkgs.clippy ];
+        inherit cargoHash;
+      } ''
+      # Copy source to writable directory
+      cp -r ${self} ./source
+      chmod -R +w ./source  
+      cd ./source
+
+      # Run clippy linting
+      ${pkgs.clippy}/bin/cargo-clippy clippy -- -D warnings
+      
+      touch $out
+    '';
   }
   // (if hasTests then { test = testCheck; } else { });
 
@@ -269,9 +336,39 @@ let
     packages.default = devPackage;
     packages.dev = devPackage;
     packages.release = releasePackage;
-    apps.default = devApp;
-    apps.dev = devApp;
-    apps.release = releaseApp;
+    apps = {
+      default = devApp;
+      dev = devApp;
+      release = releaseApp;
+      lint = lintApp;
+      check-format = checkFormatApp;
+
+      # Project management and maintenance apps
+      setup = {
+        type = "app";
+        program = "${scripts.setupScript}/bin/setup-nix-polyglot-project";
+        meta = {
+          description = "Set up project with modern nix-polyglot architecture";
+          platforms = nixpkgs.lib.platforms.all;
+        };
+      };
+      update-project = {
+        type = "app";
+        program = "${scripts.updateScript}/bin/update-nix-polyglot-project";
+        meta = {
+          description = "Update project to latest nix-polyglot functionality";
+          platforms = nixpkgs.lib.platforms.all;
+        };
+      };
+      migrate = {
+        type = "app";
+        program = "${scripts.migrationScript}/bin/migrate-to-nix-polyglot";
+        meta = {
+          description = "Migrate legacy project to modern architecture";
+          platforms = nixpkgs.lib.platforms.all;
+        };
+      };
+    };
     inherit checks;
   };
 
@@ -291,6 +388,15 @@ in
     devApp
     releaseApp
     ;
+
+  # Formatting and linting components
+  inherit
+    lintApp
+    checkFormatApp
+    ;
+
+  # Script system for maintenance-free project management
+  inherit scripts;
 
   # New simplified interface
   inherit mkDefaultOutputs;
