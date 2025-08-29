@@ -18,7 +18,7 @@
 # Usage:
 #   python = import ./python.nix { inherit nixpkgs treefmt-nix git-hooks-nix; };
 #   project = python { pkgs = nixpkgs.legacyPackages.${system}; self = ./.; buildTarget = "pyproject.toml"; inherit system; };
-#   # Use project.mkDefaultOutputs for complete flake integration
+#   # Use project.defaultOutputs for complete flake integration
 
 {
   # Required parameters
@@ -501,7 +501,7 @@ let
       null;
 
   # Default flake outputs structure - ready to use
-  mkDefaultOutputs = {
+  defaultOutputs = {
     devShells.default = devShell;
     packages.default = devPackage;
     packages.dev = devPackage;
@@ -570,5 +570,5 @@ in
 
   # Complete flake integration - recommended for most users
   # Contains: devShells.default, packages.{default,dev,release}, apps.{default,dev,release,lint,check-format?,setup,update-project,migrate}, checks
-  inherit mkDefaultOutputs;
+  inherit defaultOutputs;
 }

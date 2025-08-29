@@ -26,6 +26,6 @@
         };
       in
       # Use the complete project structure
-      pythonProject.mkDefaultOutputs
+      pythonProject.defaultOutputs
     );
 }

@@ -79,7 +79,7 @@ Create `{language}.nix` in the project root:
 # Usage:
 #   {language} = import ./{language}.nix { inherit nixpkgs treefmt-nix git-hooks-nix; };
 #   project = {language} { pkgs = nixpkgs.legacyPackages.${system}; self = ./.; ... };
-#   # Use project.mkDefaultOutputs for complete flake integration
+#   # Use project.defaultOutputs for complete flake integration
 
 {
   # Required parameters
@@ -134,7 +134,7 @@ in {
   inherit devPackage releasePackage;
 
   # Complete flake integration - recommended for most users
-  mkDefaultOutputs = {
+  defaultOutputs = {
     devShells.default = devShell;
     packages = {
       default = devPackage;

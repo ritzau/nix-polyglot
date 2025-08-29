@@ -343,7 +343,7 @@ let
   // (if hasTests then { test = testCheck; } else { });
 
   # Default flake outputs structure - ready to use
-  mkDefaultOutputs = {
+  defaultOutputs = {
     devShells.default = devShell;
     packages.default = devPackage;
     packages.dev = devPackage;
@@ -413,5 +413,5 @@ in
   inherit scripts;
 
   # New simplified interface
-  inherit mkDefaultOutputs;
+  inherit defaultOutputs;
 }

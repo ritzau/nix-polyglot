@@ -23,6 +23,6 @@
         };
       in
       # Use the complete project structure
-      csharpProject.mkDefaultOutputs
+      csharpProject.defaultOutputs
     );
 }

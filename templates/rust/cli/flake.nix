@@ -22,6 +22,6 @@
         };
       in
       # Use the complete project structure
-      rustProject.mkDefaultOutputs
+      rustProject.defaultOutputs
     );
 }

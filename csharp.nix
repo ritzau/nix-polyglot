@@ -19,7 +19,7 @@
 # Usage:
 #   csharp = import ./csharp.nix { inherit nixpkgs treefmt-nix git-hooks-nix; };
 #   project = csharp { pkgs = nixpkgs.legacyPackages.${system}; self = ./.; buildTarget = "MyApp.sln"; inherit system; };
-#   # Use project.mkDefaultOutputs for complete flake integration
+#   # Use project.defaultOutputs for complete flake integration
 #
 # Main function that creates C# project outputs for a single system
 {
@@ -390,7 +390,7 @@ let
       null;
 
   # Default flake outputs structure - ready to use
-  mkDefaultOutputs = {
+  defaultOutputs = {
     devShells.default = devShell;
     packages.default = devPackage;
     packages.dev = devPackage;
@@ -461,5 +461,5 @@ in
   # Complete flake integration - recommended for most users
   # Contains: devShells.default, packages.{default,dev,release}, apps.{default,dev,release,lint,check-format?,setup,update-project,migrate}, checks
   # Note: Use `nix fmt` for formatting instead of a dedicated format app
-  inherit mkDefaultOutputs;
+  inherit defaultOutputs;
 }
