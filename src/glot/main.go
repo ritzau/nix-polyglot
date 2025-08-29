@@ -74,27 +74,16 @@ func buildCommand(args []string) error {
 	target := ""
 
 	// Parse arguments
-	for i, arg := range args {
+	for _, arg := range args {
 		switch arg {
-		case "--variant":
-			if i+1 >= len(args) {
-				errorMsg("--variant requires debug|release")
-				return fmt.Errorf("missing variant")
-			}
-			next := args[i+1]
-			if next == "debug" || next == "release" {
-				variant = next
-			} else {
-				errorMsg(fmt.Sprintf("variant must be debug or release, got: %s", next))
-				return fmt.Errorf("invalid variant")
-			}
-		case "--debug":
-			variant = "debug"
 		case "--release":
 			variant = "release"
 		default:
 			if !strings.HasPrefix(arg, "--") && target == "" {
 				target = arg
+			} else if strings.HasPrefix(arg, "--") {
+				errorMsg(fmt.Sprintf("unknown flag: %s", arg))
+				return fmt.Errorf("unknown flag")
 			}
 		}
 	}
@@ -130,20 +119,6 @@ func runCommand(args []string) error {
 	// Parse arguments
 	for i, arg := range args {
 		switch arg {
-		case "--variant":
-			if i+1 >= len(args) {
-				errorMsg("--variant requires debug|release")
-				return fmt.Errorf("missing variant")
-			}
-			next := args[i+1]
-			if next == "debug" || next == "release" {
-				variant = next
-			} else {
-				errorMsg(fmt.Sprintf("variant must be debug or release, got: %s", next))
-				return fmt.Errorf("invalid variant")
-			}
-		case "--debug":
-			variant = "debug"
 		case "--release":
 			variant = "release"
 		case "--":
@@ -152,6 +127,9 @@ func runCommand(args []string) error {
 		default:
 			if !strings.HasPrefix(arg, "--") {
 				runArgs = append(runArgs, arg)
+			} else {
+				errorMsg(fmt.Sprintf("unknown flag: %s", arg))
+				return fmt.Errorf("unknown flag")
 			}
 		}
 	}
@@ -202,25 +180,19 @@ func helpCommand(subcmd string) {
 	if subcmd != "" {
 		switch subcmd {
 		case "build":
-			fmt.Println("glot build [target] [--variant debug|release]")
+			fmt.Println("glot build [target] [--release]")
 			fmt.Println("")
 			fmt.Println("Build the project or specific target.")
 			fmt.Println("")
 			fmt.Println("Options:")
-			fmt.Println("  --variant debug     Build debug variant (default)")
-			fmt.Println("  --variant release   Build release variant")
-			fmt.Println("  --debug             Same as --variant debug")
-			fmt.Println("  --release           Same as --variant release")
+			fmt.Println("  --release           Build release variant (default: debug)")
 		case "run":
-			fmt.Println("glot run [target] [--variant debug|release] [-- args...]")
+			fmt.Println("glot run [target] [--release] [-- args...]")
 			fmt.Println("")
 			fmt.Println("Run the project or specific target.")
 			fmt.Println("")
 			fmt.Println("Options:")
-			fmt.Println("  --variant debug     Run debug variant (default)")
-			fmt.Println("  --variant release   Run release variant")
-			fmt.Println("  --debug             Same as --variant debug")
-			fmt.Println("  --release           Same as --variant release")
+			fmt.Println("  --release           Run release variant (default: debug)")
 			fmt.Println("  --                  Pass remaining args to program")
 		default:
 			fmt.Printf("No detailed help available for: %s\n", subcmd)
@@ -233,8 +205,8 @@ func helpCommand(subcmd string) {
 	fmt.Println("Usage: glot <command> [options]")
 	fmt.Println("")
 	fmt.Println("Commands:")
-	fmt.Println("  build [target] [--variant debug|release]    Build project")
-	fmt.Println("  run [target] [--variant debug|release]      Run project")
+	fmt.Println("  build [target] [--release]                  Build project")
+	fmt.Println("  run [target] [--release] [-- args...]       Run project")
 	fmt.Println("  fmt                                          Format code")
 	fmt.Println("  lint                                         Lint code")
 	fmt.Println("  test                                         Run tests")
