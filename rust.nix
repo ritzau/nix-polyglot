@@ -294,6 +294,17 @@ let
   # Import script system for project templates and maintenance
   scripts = import ./lib/scripts.nix { inherit pkgs; };
 
+  # Project-specific formatter for Rust code
+  projectFormatter = pkgs.writeShellApplication {
+    name = "rust-formatter";
+    runtimeInputs = [ cargo pkgs.rustfmt ];
+    text = ''
+      echo "🦀 Formatting Rust code..."
+      cargo fmt
+      echo "Rust formatting complete!"
+    '';
+  };
+
   # Comprehensive checks system
   checks = {
     build-dev = devPackage;
@@ -370,6 +381,7 @@ let
         };
       };
     };
+    formatter = projectFormatter;
     inherit checks;
   };
 
@@ -394,6 +406,7 @@ in
   inherit
     lintApp
     checkFormatApp
+    projectFormatter
     ;
 
   # Script system for maintenance-free project management

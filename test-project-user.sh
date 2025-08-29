@@ -43,7 +43,7 @@ get_expected_output() {
             echo "Hello, World from C#!"
             ;;
         "rust")
-            echo "Hello, world!"
+            echo "Hello, World from Rust via Nix-Polyglot!"
             ;;
         "python")
             echo "Hello, World from Python!"
