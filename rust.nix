@@ -264,7 +264,7 @@ let
       echo "Running Rust linting checks..."
       
       echo "🦀 Running clippy..."
-      ${pkgs.clippy}/bin/cargo-clippy clippy -- -D warnings
+      ${cargo}/bin/cargo clippy -- -D warnings -A unexpected_cfgs
       
       echo "Rust linting passed!"
     ''}";
@@ -281,7 +281,7 @@ let
       echo "Checking formatting of ${packageName} Rust files..."
       
       echo "🦀 Checking with rustfmt..."
-      ${pkgs.rustfmt}/bin/rustfmt --check src/**/*.rs
+      ${cargo}/bin/cargo fmt --check
       
       echo "Rust formatting check passed!"
     ''}";
@@ -300,7 +300,8 @@ let
     build-release = releasePackage;
     format-check = pkgs.runCommand "format-check-${packageName}"
       {
-        buildInputs = [ pkgs.rustfmt ];
+        buildInputs = [ cargo pkgs.rustfmt ];
+        inherit cargoHash;
       } ''
       # Copy source to writable directory
       cp -r ${self} ./source
@@ -308,13 +309,13 @@ let
       cd ./source
 
       # Check Rust formatting
-      ${pkgs.rustfmt}/bin/rustfmt --check src/**/*.rs
+      ${cargo}/bin/cargo fmt --check
       
       touch $out
     '';
     lint-check = pkgs.runCommand "lint-check-${packageName}"
       {
-        buildInputs = [ pkgs.clippy ];
+        buildInputs = [ cargo pkgs.clippy ];
         inherit cargoHash;
       } ''
       # Copy source to writable directory
@@ -323,7 +324,7 @@ let
       cd ./source
 
       # Run clippy linting
-      ${pkgs.clippy}/bin/cargo-clippy clippy -- -D warnings
+      ${cargo}/bin/cargo clippy -- -D warnings -A unexpected_cfgs
       
       touch $out
     '';
