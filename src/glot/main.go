@@ -123,7 +123,7 @@ func runCommand(args []string) error {
 			variant = "release"
 		case "--":
 			runArgs = args[i+1:]
-			break
+			goto done
 		default:
 			if !strings.HasPrefix(arg, "--") {
 				runArgs = append(runArgs, arg)
@@ -133,6 +133,7 @@ func runCommand(args []string) error {
 			}
 		}
 	}
+	done:
 
 	info(fmt.Sprintf("Running (%s variant)...", variant))
 	
