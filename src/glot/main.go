@@ -117,13 +117,14 @@ func runCommand(args []string) error {
 	runArgs := []string{}
 	
 	// Parse arguments
+	parseLoop:
 	for i, arg := range args {
 		switch arg {
 		case "--release":
 			variant = "release"
 		case "--":
 			runArgs = args[i+1:]
-			goto done
+			break parseLoop
 		default:
 			if !strings.HasPrefix(arg, "--") {
 				runArgs = append(runArgs, arg)
@@ -133,7 +134,6 @@ func runCommand(args []string) error {
 			}
 		}
 	}
-	done:
 
 	info(fmt.Sprintf("Running (%s variant)...", variant))
 	
