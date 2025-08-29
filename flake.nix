@@ -101,6 +101,14 @@
                 platforms = nixpkgs.lib.platforms.all;
               };
             };
+            new-python = {
+              type = "app";
+              program = "${templates.python}/bin/new-python-console-project";
+              meta = {
+                description = "Create a new Python console project with nix-polyglot";
+                platforms = nixpkgs.lib.platforms.all;
+              };
+            };
 
             # Explicit template apps
             new-csharp-console = {
@@ -116,6 +124,14 @@
               program = "${templates.rust-cli}/bin/new-rust-cli-project";
               meta = {
                 description = "Create a new Rust CLI application";
+                platforms = nixpkgs.lib.platforms.all;
+              };
+            };
+            new-python-console = {
+              type = "app";
+              program = "${templates.python-console}/bin/new-python-console-project";
+              meta = {
+                description = "Create a new Python console application";
                 platforms = nixpkgs.lib.platforms.all;
               };
             };
@@ -178,6 +194,7 @@
       lib = {
         csharp = import ./csharp.nix { inherit nixpkgs treefmt-nix git-hooks-nix; };
         rust = import ./rust.nix { inherit nixpkgs; };
+        python = import ./python.nix { inherit nixpkgs treefmt-nix git-hooks-nix; };
 
         # Also expose standard tools and hooks for direct use
         standardTools =

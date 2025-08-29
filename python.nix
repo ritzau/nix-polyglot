@@ -125,10 +125,19 @@ let
   isPythonScript = pkgs.lib.hasSuffix ".py" buildTarget;
 
   # Python environment with dependencies
-  pythonEnv = python.withPackages (ps:
-    (extraPythonPackages ps)
-    ++ propagatedBuildInputs
-    ++ pkgs.lib.optionals enableTests checkInputs
+  pythonEnv = python.withPackages (ps: with ps; [
+    pip
+    setuptools
+    wheel
+    # Common dependencies for Poetry projects
+    click
+    pytest
+    # Build tools
+    build
+    poetry-core
+  ] ++ (extraPythonPackages ps)
+  ++ propagatedBuildInputs
+  ++ pkgs.lib.optionals enableTests checkInputs
   );
 
   # Derive application name from buildTarget
@@ -180,19 +189,31 @@ let
       # Minimal build - no wheel generation, direct installation
     '';
 
-    installPhase = installPhase or ''
-      mkdir -p $out/bin $out/lib/python${python.pythonVersion}/site-packages
+    installPhase = ''
+            mkdir -p $out/bin $out/lib/python${python.pythonVersion}/site-packages
       
-      # Install source code directly for fast iteration
-      if [[ -f setup.py ]]; then
-        ${python}/bin/python setup.py develop --prefix=$out
-      elif [[ -f pyproject.toml ]]; then
-        ${python}/bin/python -m pip install -e . --prefix=$out --no-deps
-      else
-        # Single file Python script
-        cp ${buildTarget} $out/bin/${appName}
-        chmod +x $out/bin/${appName}
-      fi
+            # Install source code directly for fast iteration
+            if [[ -f setup.py ]]; then
+              ${pythonEnv}/bin/python setup.py install --prefix=$out
+            elif [[ -f pyproject.toml ]]; then
+              ${pythonEnv}/bin/python -m pip install . --prefix=$out --no-deps --no-user
+            else
+              # Single file Python script
+              cp ${buildTarget} $out/bin/${appName}
+              chmod +x $out/bin/${appName}
+            fi
+      
+            # Fix executables to include proper Python path
+            for script in $out/bin/*; do
+              if [[ -f "$script" && -x "$script" ]]; then
+                if head -1 "$script" | grep -q python; then
+                  # Add our site-packages to the Python path
+                  sed -i "2i\\
+      import sys\\
+      sys.path.insert(0, '$out/lib/python${python.pythonVersion}/site-packages')" "$script"
+                fi
+              fi
+            done
     '';
 
     doCheck = false; # Skip tests in dev builds for speed
@@ -232,25 +253,37 @@ let
       
       if [[ -f pyproject.toml ]]; then
         # Modern Python packaging
-        ${python}/bin/python -m build --wheel --no-isolation
+        ${pythonEnv}/bin/python -m build --wheel --no-isolation
       elif [[ -f setup.py ]]; then
         # Legacy setuptools
-        ${python}/bin/python setup.py bdist_wheel
+        ${pythonEnv}/bin/python setup.py bdist_wheel
       fi
       
       runHook postBuild
     '';
 
-    installPhase = installPhase or ''
-      mkdir -p $out/bin
+    installPhase = ''
+            mkdir -p $out/bin
       
-      if [[ -f pyproject.toml || -f setup.py ]]; then
-        # Install from wheel for reproducibility
-        ${python}/bin/python -m pip install dist/*.whl --prefix=$out --no-deps
-      else
-        # Single file script
-        install -D ${buildTarget} $out/bin/${appName}
-      fi
+            if [[ -f pyproject.toml || -f setup.py ]]; then
+              # Install from wheel for reproducibility
+              ${pythonEnv}/bin/python -m pip install dist/*.whl --prefix=$out --no-deps --no-user
+        
+              # Fix executables to include proper Python path
+              for script in $out/bin/*; do
+                if [[ -f "$script" && -x "$script" ]]; then
+                  if head -1 "$script" | grep -q python; then
+                    # Add our site-packages to the Python path
+                    sed -i "2i\\
+      import sys\\
+      sys.path.insert(0, '$out/lib/python${python.pythonVersion}/site-packages')" "$script"
+                  fi
+                fi
+              done
+            else
+              # Single file script
+              install -D ${buildTarget} $out/bin/${appName}
+            fi
     '';
 
     # Full testing and validation
@@ -265,9 +298,9 @@ let
       ${if testCommand != null then
           testCommand
         else if testRunner == "pytest" then
-          "${python}/bin/python -m pytest ${builtins.concatStringsSep " " (testPaths ++ pytestArgs)}"
+          "${pythonEnv}/bin/python -m pytest ${builtins.concatStringsSep " " (testPaths ++ pytestArgs)}"
         else if testRunner == "unittest" then
-          "${python}/bin/python -m unittest discover -s tests"
+          "${pythonEnv}/bin/python -m unittest discover -s tests"
         else
           "echo 'No tests configured'"
       }
@@ -295,6 +328,7 @@ let
       nativeBuildInputs = (releaseBuildConfig.nativeBuildInputs or [ ]) ++ [
         python.pkgs.build
         python.pkgs.wheel
+        python.pkgs.poetry-core
       ];
       # Build and install hooks
       preBuild = buildHooks.buildPhaseHook;
@@ -343,10 +377,10 @@ let
       echo "Checking formatting of ${appName} Python files..."
       
       echo "🖤 Checking with black..."
-      ${pkgs.black}/bin/black --check .
+      ${pkgs.black}/bin/black --check --exclude="/(result|\.git|__pycache__|\.pytest_cache|\.nix-build)" .
       
       echo "📦 Checking import sorting..."
-      ${pkgs.python311Packages.isort}/bin/isort --check-only .
+      ${pkgs.python311Packages.isort}/bin/isort --check-only --skip-glob="result/*" --skip-glob=".*" .
       
       echo "Python formatting check passed!"
     ''}";

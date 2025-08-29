@@ -22,12 +22,65 @@ START_TIME=$(date +%s)
 # Test result tracking
 FAILED_TEST_NAMES=()
 
+# Detect project language type
+detect_project_type() {
+    if ls *.csproj >/dev/null 2>&1 || grep -q "buildDotnetModule\|dotnet\|csharp" flake.nix 2>/dev/null; then
+        echo "csharp"
+    elif [[ -f "Cargo.toml" ]] || grep -q "rust\|cargo" flake.nix 2>/dev/null; then
+        echo "rust"
+    elif [[ -f "pyproject.toml" ]] || [[ -f "setup.py" ]] || grep -q "python" flake.nix 2>/dev/null; then
+        echo "python"
+    else
+        echo "unknown"
+    fi
+}
+
+# Get expected app output based on project type
+get_expected_output() {
+    local project_type="$1"
+    case "$project_type" in
+        "csharp")
+            echo "Hello, World from C#!"
+            ;;
+        "rust")
+            echo "Hello, world!"
+            ;;
+        "python")
+            echo "Hello, World from Python!"
+            ;;
+        *)
+            echo "Hello"
+            ;;
+    esac
+}
+
+# Get expected dev tools based on project type
+get_dev_tools() {
+    local project_type="$1"
+    case "$project_type" in
+        "csharp")
+            echo "dotnet"
+            ;;
+        "rust")
+            echo "cargo"
+            ;;
+        "python")
+            echo "python"
+            ;;
+        *)
+            echo "fastfetch"  # fallback to common tool
+            ;;
+    esac
+}
+
 print_header() {
+    local project_type=$(detect_project_type)
     echo -e "${BLUE}=================================${NC}"
     echo -e "${BLUE}👨‍💻 NIX-POLYGLOT PROJECT USER TESTS${NC}"
     echo -e "${BLUE}=================================${NC}"
     echo "Testing from: $(pwd)"
-    echo "Perspective: C# developer using nix-polyglot"
+    echo "Perspective: Developer using nix-polyglot"
+    echo "Project type: $project_type"
     echo "Started at: $(date)"
     echo ""
 }
@@ -101,6 +154,10 @@ run_evaluation_test() {
 }
 
 test_project_functionality() {
+    local project_type=$(detect_project_type)
+    local expected_output=$(get_expected_output "$project_type")
+    local dev_tool=$(get_dev_tools "$project_type")
+    
     echo -e "${YELLOW}📋 PROJECT DEVELOPER WORKFLOW${NC}"
     echo "$(printf '%.0s-' {1..50})"
 
@@ -125,11 +182,11 @@ test_project_functionality() {
 
     run_test "nix run (default app)" \
         "nix run 2>/dev/null | head -1" \
-        "Hello"
+        "$expected_output"
 
     run_test "nix run .#release" \
         "nix run .#release 2>/dev/null | head -1" \
-        "Hello"
+        "$expected_output"
 
     run_test "nix run .#lint" \
         "nix run .#lint 2>/dev/null" \
@@ -163,7 +220,7 @@ test_project_functionality() {
 
     # Test development environment
     run_test "nix develop (dev shell)" \
-        "nix develop --command bash -c 'which dotnet && which fastfetch && echo TOOLS_AVAILABLE'" \
+        "nix develop --command bash -c 'which $dev_tool && which fastfetch && echo TOOLS_AVAILABLE'" \
         "TOOLS_AVAILABLE"
 
     # Test that binaries actually work (avoid createdump and library files)

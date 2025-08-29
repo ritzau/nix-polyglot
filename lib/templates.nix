@@ -75,9 +75,13 @@ in
   # Rust templates  
   rust-cli = mkTemplateFromDir ../templates/rust/cli;
 
+  # Python templates
+  python-console = mkTemplateFromDir ../templates/python/console;
+
   # Legacy aliases for backward compatibility
   csharp = mkTemplateFromDir ../templates/csharp/console;
   rust = mkTemplateFromDir ../templates/rust/cli;
+  python = mkTemplateFromDir ../templates/python/console;
 
   # Template listing helper
   listTemplates = pkgs.writeShellApplication {
@@ -93,11 +97,17 @@ in
       echo "    rust           - Rust CLI application"
       echo "    rust-cli       - Rust CLI application (explicit)"
       echo ""
+      echo "  Python Templates:"
+      echo "    python         - Python console application with Poetry"
+      echo "    python-console - Python console application (explicit)"
+      echo ""
       echo "Usage:"
       echo "  nix run nix-polyglot#new-csharp myproject"
       echo "  nix run nix-polyglot#new-rust myproject"
+      echo "  nix run nix-polyglot#new-python myproject"
       echo "  nix run nix-polyglot#new-csharp-console myproject"
       echo "  nix run nix-polyglot#new-rust-cli myproject"
+      echo "  nix run nix-polyglot#new-python-console myproject"
       echo ""
       echo "Each template includes:"
       echo "  • Complete flake.nix with nix-polyglot integration"
