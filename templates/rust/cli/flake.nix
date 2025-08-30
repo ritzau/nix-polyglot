@@ -21,7 +21,12 @@
           cargoHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="; # Update after first build
         };
       in
-      # Use the complete project structure
-      rustProject.defaultOutputs
+      # Use the complete project structure with glot CLI
+      rustProject.defaultOutputs // {
+        # Add packages - merge with existing packages from defaultOutputs
+        packages = rustProject.defaultOutputs.packages // {
+          glot = nix-polyglot.packages.${system}.glot;
+        };
+      }
     );
 }

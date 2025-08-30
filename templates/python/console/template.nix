@@ -15,7 +15,7 @@
     "myapp/main.py" = ./myapp/main.py;
     "tests/__init__.py" = ./tests/__init__.py;
     "tests/test_main.py" = ./tests/test_main.py;
-    "justfile" = ./justfile;
+    ".envrc" = ./.envrc;
     ".gitignore" = ./.gitignore;
     ".editorconfig" = ./.editorconfig;
     "README.md" = ./README.md;

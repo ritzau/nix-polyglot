@@ -25,7 +25,12 @@
           testRunner = "pytest";
         };
       in
-      # Use the complete project structure
-      pythonProject.defaultOutputs
+      # Use the complete project structure with glot CLI
+      pythonProject.defaultOutputs // {
+        # Add packages - merge with existing packages from defaultOutputs
+        packages = pythonProject.defaultOutputs.packages // {
+          glot = nix-polyglot.packages.${system}.glot;
+        };
+      }
     );
 }

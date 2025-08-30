@@ -22,7 +22,12 @@
           nugetDeps = null; # No external dependencies for console app
         };
       in
-      # Use the complete project structure
-      csharpProject.defaultOutputs
+      # Use the complete project structure with glot CLI
+      csharpProject.defaultOutputs // {
+        # Add packages - merge with existing packages from defaultOutputs
+        packages = csharpProject.defaultOutputs.packages // {
+          glot = nix-polyglot.packages.${system}.glot;
+        };
+      }
     );
 }

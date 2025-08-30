@@ -12,7 +12,7 @@
     "flake.nix" = ./flake.nix;
     "MyApp.csproj" = ./MyApp.csproj;
     "Program.cs" = ./Program.cs;
-    "justfile" = ./justfile;
+    ".envrc" = ./.envrc;
     ".gitignore" = ./.gitignore;
     ".editorconfig" = ./.editorconfig;
   };

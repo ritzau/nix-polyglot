@@ -13,7 +13,7 @@
     "Cargo.toml" = ./Cargo.toml;
     "Cargo.lock" = ./Cargo.lock;
     "src/main.rs" = ./src/main.rs;
-    "justfile" = ./justfile;
+    ".envrc" = ./.envrc;
     ".gitignore" = ./.gitignore;
     ".editorconfig" = ./.editorconfig;
   };
