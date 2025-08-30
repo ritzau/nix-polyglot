@@ -378,11 +378,22 @@ func main() {
 			// If no args, show available templates
 			if len(args) == 0 {
 				info("Available templates:")
-				// Try local nix-polyglot first, fall back to GitHub
-				if err := runNix("run", ".#templates"); err != nil {
-					return runNix("run", "github:ritzau/nix-polyglot#templates")
+				// Try multiple sources for templates
+				templateSources := []string{
+					".#templates", // Current directory (if we're in nix-polyglot dev)
+					"path:/Users/ritzau/src/slask/nix/polyglot/nix-polyglot#templates", // Hardcoded dev path
+					"github:ritzau/nix-polyglot#templates", // GitHub fallback
 				}
-				return nil
+				
+				for _, source := range templateSources {
+					if err := runNix("run", source); err == nil {
+						return nil
+					}
+				}
+				
+				// All sources failed
+				errorMsg("Failed to list templates from all sources")
+				return fmt.Errorf("template listing failed")
 			}
 			
 			// If only template specified, show usage
@@ -412,16 +423,30 @@ func main() {
 				appName = fmt.Sprintf("new-%s", template)
 			}
 			
-			// Try local nix-polyglot first, fall back to GitHub
-			if err := runNix("run", fmt.Sprintf(".#%s", appName), projectName); err != nil {
-				// Try GitHub fallback
-				if err := runNix("run", fmt.Sprintf("github:ritzau/nix-polyglot#%s", appName), projectName); err != nil {
-					errorMsg(fmt.Sprintf("Failed to create project with template '%s'", template))
-					info("Available templates:")
-					runNix("run", "github:ritzau/nix-polyglot#templates")
-					return err
+			// Try multiple sources for nix-polyglot templates
+			var templateSources = []string{
+				fmt.Sprintf(".#%s", appName), // Current directory (if we're in nix-polyglot dev)
+				fmt.Sprintf("path:/Users/ritzau/src/slask/nix/polyglot/nix-polyglot#%s", appName), // Hardcoded dev path
+				fmt.Sprintf("github:ritzau/nix-polyglot#%s", appName), // GitHub fallback
+			}
+			
+			var lastErr error
+			for _, source := range templateSources {
+				if err := runNix("run", source, projectName); err == nil {
+					// Success - break out
+					goto templateSuccess
+				} else {
+					lastErr = err
 				}
 			}
+			
+			// All template sources failed
+			errorMsg(fmt.Sprintf("Failed to create project with template '%s'", template))
+			info("Available templates:")
+			runNix("run", "github:ritzau/nix-polyglot#templates")
+			return lastErr
+			
+			templateSuccess:
 			
 			success(fmt.Sprintf("Project '%s' created successfully!", projectName))
 			info(fmt.Sprintf("Next steps: cd %s && direnv allow", projectName))
