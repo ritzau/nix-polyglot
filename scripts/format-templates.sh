@@ -48,7 +48,14 @@ format_template() {
     if nix develop --command bash -c "
         set -e
         echo '   📝 Running formatter...'
-        if command -v just >/dev/null 2>&1; then
+        if command -v glot >/dev/null 2>&1; then
+            if glot fmt 2>/dev/null; then
+                echo '   ✅ Formatting completed with glot fmt'
+            else
+                echo '   ⚠️  glot fmt failed, trying nix fmt...'
+                nix fmt 2>/dev/null || echo '   ⚠️  nix fmt not available'
+            fi
+        elif command -v just >/dev/null 2>&1; then
             if just fmt 2>/dev/null; then
                 echo '   ✅ Formatting completed with just fmt'
             else

@@ -246,6 +246,23 @@ test_project_functionality() {
         "nix develop --command bash -c 'echo \"Pre-commit ready\" && exit 0'" \
         "Pre-commit ready"
 
+    # Test glot CLI integration (if available)
+    echo ""
+    echo -e "${YELLOW}📋 GLOT CLI INTEGRATION${NC}"
+    echo "$(printf '%.0s-' {1..50})"
+    
+    run_test "glot CLI available" \
+        "command -v glot >/dev/null 2>&1 && echo 'AVAILABLE' || nix run .#glot-cli -- help >/dev/null 2>&1 && echo 'AVAILABLE_VIA_NIX'" \
+        "AVAILABLE"
+        
+    run_test "glot help works" \
+        "if command -v glot >/dev/null 2>&1; then glot help; else nix run .#glot-cli -- help; fi | head -1" \
+        "A tool for managing Nix-based polyglot development projects"
+        
+    run_test "glot format command" \
+        "if command -v glot >/dev/null 2>&1; then glot fmt 2>/dev/null && echo 'GLOT_FMT_SUCCESS'; else nix run .#glot-cli -- fmt 2>/dev/null && echo 'GLOT_FMT_SUCCESS'; fi" \
+        "GLOT_FMT_SUCCESS"
+
     echo ""
     echo -e "${YELLOW}📋 PROJECT MAINTENANCE${NC}"
     echo "$(printf '%.0s-' {1..50})"

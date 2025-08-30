@@ -226,6 +226,15 @@ main() {
         "nix eval .#lib --apply 'lib: builtins.length (builtins.attrNames lib)' 2>/dev/null | grep -E '^[0-9]+$' && echo 'AVAILABLE'" \
         "AVAILABLE"
 
+    # Test glot CLI package
+    run_test "glot CLI package available" \
+        "nix eval .#packages.x86_64-darwin.glot 2>/dev/null >/dev/null && echo 'AVAILABLE'" \
+        "AVAILABLE"
+
+    run_test "glot CLI functionality" \
+        "nix run .#glot -- help 2>/dev/null | head -1" \
+        "A tool for managing Nix-based polyglot development projects"
+
     run_test "csharp lib loadable" \
         "nix eval --impure --expr 'let nixpkgs = import <nixpkgs> {}; csharp = import ./csharp.nix { inherit nixpkgs; treefmt-nix = null; git-hooks-nix = null; }; in \"loadable\"' 2>/dev/null" \
         "loadable"
