@@ -267,13 +267,14 @@ func main() {
 	var updateCmd = &cobra.Command{
 		Use:   "update",
 		Short: "Update dependencies",
-		Long:  "Update both Nix flake and Cargo dependencies.",
+		Long:  "Update both Nix flake and Cargo dependencies, plus refresh glot CLI.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := checkNix(); err != nil {
 				errorMsg(err.Error())
 				return err
 			}
-			info("Updating dependencies...")
+			
+			info("Updating project dependencies...")
 			if err := runNix("flake", "update"); err != nil {
 				errorMsg("Failed to update flake dependencies")
 				return err
@@ -281,7 +282,22 @@ func main() {
 			if err := runInDevShell("cargo", "update"); err != nil {
 				warning("Failed to update cargo dependencies")
 			}
-			success("Dependencies updated!")
+			success("Project dependencies updated!")
+			
+			// Self-update: remove cached glot CLI to force rebuild
+			info("Refreshing glot CLI...")
+			cacheFile := ".cache/bin/glot"
+			if _, err := os.Stat(cacheFile); err == nil {
+				if err := os.Remove(cacheFile); err != nil {
+					warning("Could not remove cached glot CLI - you may need to run 'direnv reload'")
+				} else {
+					success("Cached glot CLI cleared - will be rebuilt automatically on next use")
+				}
+			} else {
+				info("No cached glot CLI found - will be built automatically on next use")
+			}
+			
+			success("Update completed! Glot CLI will be refreshed automatically.")
 			return nil
 		},
 	}
