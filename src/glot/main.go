@@ -31,10 +31,18 @@ func errorMsg(msg string) {
 	fmt.Fprintf(os.Stderr, "❌ Error: %s\n", msg)
 }
 
-// Check if nix and flake.nix exist
-func checkNix() error {
+// Check if nix is installed
+func checkNixInstalled() error {
 	if _, err := exec.LookPath("nix"); err != nil {
 		return fmt.Errorf("Nix is not installed or not in PATH. Please install Nix first")
+	}
+	return nil
+}
+
+// Check if nix and flake.nix exist
+func checkNix() error {
+	if err := checkNixInstalled(); err != nil {
+		return err
 	}
 	if _, err := os.Stat("flake.nix"); os.IsNotExist(err) {
 		return fmt.Errorf("No flake.nix found in current directory. Are you in a nix polyglot project?")
@@ -355,7 +363,73 @@ func main() {
 		},
 	}
 
-	rootCmd.AddCommand(buildCmd, runCmd, fmtCmd, lintCmd, testCmd, checkCmd, cleanCmd, updateCmd, infoCmd, shellCmd)
+	var newCmd = &cobra.Command{
+		Use:   "new [template] [name]",
+		Short: "Create new project from template",
+		Long:  "Create a new project from available nix-polyglot templates.",
+		Args:  cobra.RangeArgs(0, 2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// For 'new' command, we only need nix installed, not flake.nix present
+			if err := checkNixInstalled(); err != nil {
+				errorMsg(err.Error())
+				return err
+			}
+			
+			// If no args, show available templates
+			if len(args) == 0 {
+				info("Available templates:")
+				// Try local nix-polyglot first, fall back to GitHub
+				if err := runNix("run", ".#templates"); err != nil {
+					return runNix("run", "github:ritzau/nix-polyglot#templates")
+				}
+				return nil
+			}
+			
+			// If only template specified, show usage
+			if len(args) == 1 {
+				template := args[0]
+				errorMsg(fmt.Sprintf("Project name required. Usage: glot new %s <project-name>", template))
+				return fmt.Errorf("missing project name")
+			}
+			
+			// Create project from template
+			template := args[0]
+			projectName := args[1]
+			
+			info(fmt.Sprintf("Creating new %s project: %s", template, projectName))
+			
+			// Map common template names to nix app names
+			var appName string
+			switch template {
+			case "rust", "rust-cli":
+				appName = "new-rust"
+			case "csharp", "csharp-console":
+				appName = "new-csharp"
+			case "python", "python-console":
+				appName = "new-python"
+			default:
+				// Try the template name directly as an app
+				appName = fmt.Sprintf("new-%s", template)
+			}
+			
+			// Try local nix-polyglot first, fall back to GitHub
+			if err := runNix("run", fmt.Sprintf(".#%s", appName), projectName); err != nil {
+				// Try GitHub fallback
+				if err := runNix("run", fmt.Sprintf("github:ritzau/nix-polyglot#%s", appName), projectName); err != nil {
+					errorMsg(fmt.Sprintf("Failed to create project with template '%s'", template))
+					info("Available templates:")
+					runNix("run", "github:ritzau/nix-polyglot#templates")
+					return err
+				}
+			}
+			
+			success(fmt.Sprintf("Project '%s' created successfully!", projectName))
+			info(fmt.Sprintf("Next steps: cd %s && direnv allow", projectName))
+			return nil
+		},
+	}
+
+	rootCmd.AddCommand(buildCmd, runCmd, fmtCmd, lintCmd, testCmd, checkCmd, cleanCmd, updateCmd, infoCmd, shellCmd, newCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)

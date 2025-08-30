@@ -51,22 +51,45 @@
 
 ### Remaining Tasks
 
-- [ ] Implement `glot new [template] [name]` with template discovery
-- [ ] Add cross-compilation support (--platform)
+- [ ] Update templates to use glot CLI instead of justfiles
 - [ ] Add shell completion installation to project templates
-- [ ] Create unified template system integration
 - [ ] Documentation and user guides
 
 ### Completed from Original Phase 3
 
 - [x] ~~Add variant support improvements~~ (Simplified to --release flag)
+- [x] **Implement `glot new [template] [name]` with template discovery** ✅
+- [x] **Create unified template system integration** ✅
 
 ### Optional Future Enhancements
 
+- [ ] Add cross-compilation support (--target flag)
 - [ ] Add `glot watch` command for continuous building
 - [ ] Add `glot bench` command for performance testing
 - [ ] Add `glot docs` command for documentation generation
 - [ ] Integration with IDE/editor configurations
+
+## Cross-Compilation Design (Future Reference)
+
+**Approach:** Single glot CLI with optional `--target` flag for cross-compilation.
+
+**Key Insights:**
+
+- Keep one glot binary (always dev host architecture)
+- Add optional `--target` parameter: `glot build --target=aarch64-linux`
+- Default behavior unchanged: `glot build` works as before
+- Leverage standard nix cross-compilation patterns
+- Use emulation (rosetta/qemu) for basic testing of cross-compiled outputs
+
+**Implementation Strategy:**
+
+1. Add `--target` flag to build/run commands
+2. Map targets to nix cross-compilation expressions (e.g., `pkgsCross.aarch64-linux`)
+3. Handle emulation detection for run command
+4. Document supported targets (linux/amd64, darwin/arm64, etc.)
+
+**Benefits:** Zero breaking changes, minimal complexity, leverages existing nix patterns.
+**Complexity:** 3/10 (much simpler than initially assessed)
 
 ## Working with this TODO
 
@@ -78,9 +101,9 @@
 4. Add new tasks if you discover additional work needed
 5. Focus on completing Phase 2 before moving to Phase 3
 
-**Current Status:** Phase 1, 2 & 3 CORE COMPLETE! Go-based glot CLI fully operational across all samples.
+**Current Status:** Phase 1, 2 & 3 COMPLETE! Go-based glot CLI fully operational with template system.
 
-**Current Priority:** Advanced features (template system, cross-compilation, documentation).
+**Current Priority:** Template modernization (replace justfiles with glot), shell completion, documentation.
 
 **Implementation Location:**
 
@@ -110,6 +133,11 @@ glot completion bash|zsh|fish
 glot install-completions
 glot version
 glot upgrade-glot         # Shows upgrade instructions
+
+# Template system (newly implemented)
+glot new                  # List available templates
+glot new rust myproject   # Create project from template
+glot new python myapp     # Works with all template types
 ```
 
 ### Current Architecture ✅
