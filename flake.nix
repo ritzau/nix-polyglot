@@ -2,7 +2,7 @@
   description = "Polyglot Nix helpers for various programming languages";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     treefmt-nix.url = "github:numtide/treefmt-nix";
     git-hooks-nix.url = "github:cachix/git-hooks.nix";
@@ -71,7 +71,9 @@
             pname = "glot";
             version = "1.2.0";
             src = ./src/glot;
-            vendorHash = null; # no external dependencies
+            vendorHash = "sha256-3khKUpxdVjIRvmMWmEAUPArYgLzkaH2ObD1C9F7XwnQ=";
+            buildInputs = [ pkgs.go_1_23 ];
+            nativeBuildInputs = [ pkgs.go_1_23 ];
             meta = with pkgs.lib; {
               description = "Nix Polyglot Project Interface CLI";
               homepage = "https://github.com/ritzau/nix-polyglot";
