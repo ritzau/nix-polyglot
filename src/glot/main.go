@@ -5,20 +5,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"syscall"
+
+	"github.com/spf13/cobra"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 const version = "1.2.0"
-
-// Color codes for output
-const (
-	colorReset  = "\033[0m"
-	colorRed    = "\033[31m"
-	colorGreen  = "\033[32m"
-	colorYellow = "\033[33m"
-	colorBlue   = "\033[34m"
-)
 
 // Output helpers
 func success(msg string) {
@@ -64,28 +58,15 @@ func runInDevShell(command ...string) error {
 }
 
 // Build command
-func buildCommand(args []string) error {
+func buildCommand(release bool, _ string) error {
 	if err := checkNix(); err != nil {
 		errorMsg(err.Error())
 		return err
 	}
 
 	variant := "debug"
-	target := ""
-
-	// Parse arguments
-	for _, arg := range args {
-		switch arg {
-		case "--release":
-			variant = "release"
-		default:
-			if !strings.HasPrefix(arg, "--") && target == "" {
-				target = arg
-			} else if strings.HasPrefix(arg, "--") {
-				errorMsg(fmt.Sprintf("unknown flag: %s", arg))
-				return fmt.Errorf("unknown flag")
-			}
-		}
+	if release {
+		variant = "release"
 	}
 
 	info(fmt.Sprintf("Building (%s variant)...", variant))
@@ -97,42 +78,26 @@ func buildCommand(args []string) error {
 		buildTarget = ".#dev"
 	}
 
+	caser := cases.Title(language.English)
 	if err := runNix("build", buildTarget); err != nil {
-		errorMsg(fmt.Sprintf("%s build failed", strings.Title(variant)))
+		errorMsg(fmt.Sprintf("%s build failed", caser.String(variant)))
 		return err
 	}
 
-	success(fmt.Sprintf("%s build completed", strings.Title(variant)))
+	success(fmt.Sprintf("%s build completed", caser.String(variant)))
 	return nil
 }
 
 // Run command
-func runCommand(args []string) error {
+func runCommand(release bool, _ string, runArgs []string) error {
 	if err := checkNix(); err != nil {
 		errorMsg(err.Error())
 		return err
 	}
 
 	variant := "debug"
-	runArgs := []string{}
-	
-	// Parse arguments
-	parseLoop:
-	for i, arg := range args {
-		switch arg {
-		case "--release":
-			variant = "release"
-		case "--":
-			runArgs = args[i+1:]
-			break parseLoop
-		default:
-			if !strings.HasPrefix(arg, "--") {
-				runArgs = append(runArgs, arg)
-			} else {
-				errorMsg(fmt.Sprintf("unknown flag: %s", arg))
-				return fmt.Errorf("unknown flag")
-			}
-		}
+	if release {
+		variant = "release"
 	}
 
 	info(fmt.Sprintf("Running (%s variant)...", variant))
@@ -148,217 +113,235 @@ func runCommand(args []string) error {
 	return runNix(nixArgs...)
 }
 
-// Version command
-func versionCommand() {
-	fmt.Printf("Glot version: %s\n\n", version)
-	
-	// Show project version if available
-	if _, err := os.Stat("Cargo.toml"); err == nil {
-		fmt.Println("Project information:")
-		cmd := exec.Command("nix", "develop", "--command", "bash", "-c", 
-			"cargo metadata --no-deps --format-version 1 | jq -r '.packages[0] | \"Name: \" + .name + \"\\nVersion: \" + .version + \"\\nEdition: \" + .edition'")
-		cmd.Stdout = os.Stdout
-		if err := cmd.Run(); err != nil {
-			fmt.Println("Project version not available")
-		}
-	} else if _, err := os.Stat("flake.nix"); err == nil {
-		fmt.Println("Nix flake project detected")
-	}
-	
-	fmt.Println("\nEnvironment:")
-	if cmd := exec.Command("nix", "--version"); cmd.Run() == nil {
-		cmd.Stdout = os.Stdout
-		cmd.Run()
-	} else {
-		fmt.Println("Nix: Not available")
-	}
-	wd, _ := os.Getwd()
-	fmt.Printf("Working directory: %s\n", wd)
-}
 
-// Help command
-func helpCommand(subcmd string) {
-	if subcmd != "" {
-		switch subcmd {
-		case "build":
-			fmt.Println("glot build [target] [--release]")
-			fmt.Println("")
-			fmt.Println("Build the project or specific target.")
-			fmt.Println("")
-			fmt.Println("Options:")
-			fmt.Println("  --release           Build release variant (default: debug)")
-		case "run":
-			fmt.Println("glot run [target] [--release] [-- args...]")
-			fmt.Println("")
-			fmt.Println("Run the project or specific target.")
-			fmt.Println("")
-			fmt.Println("Options:")
-			fmt.Println("  --release           Run release variant (default: debug)")
-			fmt.Println("  --                  Pass remaining args to program")
-		default:
-			fmt.Printf("No detailed help available for: %s\n", subcmd)
-		}
-		return
-	}
-
-	fmt.Println("Glot - Nix Polyglot Project Interface")
-	fmt.Println("")
-	fmt.Println("Usage: glot <command> [options]")
-	fmt.Println("")
-	fmt.Println("Commands:")
-	fmt.Println("  build [target] [--release]                  Build project")
-	fmt.Println("  run [target] [--release] [-- args...]       Run project")
-	fmt.Println("  fmt                                          Format code")
-	fmt.Println("  lint                                         Lint code")
-	fmt.Println("  test                                         Run tests")
-	fmt.Println("  check                                        Run all checks")
-	fmt.Println("  clean                                        Clean artifacts")
-	fmt.Println("  update                                       Update dependencies")
-	fmt.Println("  info                                         Show project info")
-	fmt.Println("  shell                                        Enter dev environment")
-	fmt.Println("  version                                      Show version information")
-	fmt.Println("  help [command]                               Show help")
-	fmt.Println("")
-	fmt.Println("Use 'glot help <command>' for detailed help on specific commands.")
-}
 
 func main() {
-	if len(os.Args) < 2 {
-		helpCommand("")
-		return
+	var rootCmd = &cobra.Command{
+		Use:     "glot",
+		Short:   "Nix Polyglot Project Interface",
+		Long:    "A tool for managing Nix-based polyglot development projects",
+		Version: version,
 	}
 
-	command := os.Args[1]
-	args := os.Args[2:]
+	var buildCmd = &cobra.Command{
+		Use:   "build [target]",
+		Short: "Build project",
+		Long:  "Build the project or specific target.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			release, _ := cmd.Flags().GetBool("release")
+			target := ""
+			if len(args) > 0 {
+				target = args[0]
+			}
+			return buildCommand(release, target)
+		},
+	}
+	buildCmd.Flags().Bool("release", false, "Build release variant (default: debug)")
 
-	switch command {
-	case "build":
-		if err := buildCommand(args); err != nil {
-			os.Exit(1)
-		}
-	case "run":
-		if err := runCommand(args); err != nil {
-			os.Exit(1)
-		}
-	case "fmt", "format":
-		if err := checkNix(); err != nil {
-			errorMsg(err.Error())
-			os.Exit(1)
-		}
-		info("Formatting code...")
-		if err := runNix("fmt"); err != nil {
-			errorMsg("Code formatting failed")
-			os.Exit(1)
-		}
-		success("Code formatting completed")
-	case "lint":
-		if err := checkNix(); err != nil {
-			errorMsg(err.Error())
-			os.Exit(1)
-		}
-		info("Running Rust linting (clippy)...")
-		if err := runInDevShell("cargo", "clippy", "--", "-D", "warnings"); err != nil {
-			errorMsg("Linting failed")
-			os.Exit(1)
-		}
-		success("Linting completed")
-	case "test":
-		if err := checkNix(); err != nil {
-			errorMsg(err.Error())
-			os.Exit(1)
-		}
-		info("Running Rust tests...")
-		if err := runInDevShell("cargo", "test"); err != nil {
-			errorMsg("Tests failed")
-			os.Exit(1)
-		}
-		success("Tests completed")
-	case "check":
-		if err := checkNix(); err != nil {
-			errorMsg(err.Error())
-			os.Exit(1)
-		}
-		info("Running comprehensive checks...")
-		if err := runNix("fmt"); err != nil ||
-		   runInDevShell("cargo", "clippy", "--", "-D", "warnings") != nil ||
-		   runInDevShell("cargo", "test") != nil ||
-		   runNix("build") != nil {
-			errorMsg("Some checks failed. Please review the output above.")
-			os.Exit(1)
-		}
-		success("All checks passed!")
-	case "clean":
-		info("Cleaning build artifacts...")
-		targets := []string{"target/", "result", "result-*", ".cargo/"}
-		for _, target := range targets {
-			if matches, _ := filepath.Glob(target); len(matches) > 0 {
-				for _, match := range matches {
-					os.RemoveAll(match)
+	var runCmd = &cobra.Command{
+		Use:   "run [target] [-- args...]",
+		Short: "Run project",
+		Long:  "Run the project or specific target.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			release, _ := cmd.Flags().GetBool("release")
+			target := ""
+			runArgs := []string{}
+			
+			// Find -- separator
+			for i, arg := range args {
+				if arg == "--" {
+					runArgs = args[i+1:]
+					args = args[:i]
+					break
 				}
 			}
-		}
-		success("Clean completed!")
-	case "update":
-		if err := checkNix(); err != nil {
-			errorMsg(err.Error())
-			os.Exit(1)
-		}
-		info("Updating dependencies...")
-		if err := runNix("flake", "update"); err != nil {
-			errorMsg("Failed to update flake dependencies")
-			os.Exit(1)
-		}
-		if err := runInDevShell("cargo", "update"); err != nil {
-			warning("Failed to update cargo dependencies")
-		}
-		success("Dependencies updated!")
-	case "info":
-		if err := checkNix(); err != nil {
-			errorMsg(err.Error())
-			os.Exit(1)
-		}
-		fmt.Println("📋 Project Information")
-		fmt.Println("======================")
-		wd, _ := os.Getwd()
-		fmt.Printf("Working directory: %s\n", wd)
-		fmt.Println()
-		fmt.Println("Project type: rust")
-		fmt.Println()
-		fmt.Println("Flake status:")
-		if err := runNix("flake", "show"); err != nil {
-			errorMsg("Flake validation failed")
-		} else {
-			success("Flake is valid")
-		}
-	case "shell":
-		if err := checkNix(); err != nil {
-			errorMsg(err.Error())
-			os.Exit(1)
-		}
-		info("Entering development shell...")
-		cmd := exec.Command("nix", "develop")
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.Stdin = os.Stdin
-		if err := cmd.Run(); err != nil {
-			if exitError, ok := err.(*exec.ExitError); ok {
-				if status, ok := exitError.Sys().(syscall.WaitStatus); ok {
-					os.Exit(status.ExitStatus())
+			
+			if len(args) > 0 {
+				target = args[0]
+			}
+			
+			return runCommand(release, target, runArgs)
+		},
+	}
+	runCmd.Flags().Bool("release", false, "Run release variant (default: debug)")
+
+	var fmtCmd = &cobra.Command{
+		Use:     "fmt",
+		Aliases: []string{"format"},
+		Short:   "Format code",
+		Long:    "Format code using nix fmt.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := checkNix(); err != nil {
+				errorMsg(err.Error())
+				return err
+			}
+			info("Formatting code...")
+			if err := runNix("fmt"); err != nil {
+				errorMsg("Code formatting failed")
+				return err
+			}
+			success("Code formatting completed")
+			return nil
+		},
+	}
+
+	var lintCmd = &cobra.Command{
+		Use:   "lint",
+		Short: "Lint code",
+		Long:  "Run Rust linting (clippy) on the codebase.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := checkNix(); err != nil {
+				errorMsg(err.Error())
+				return err
+			}
+			info("Running Rust linting (clippy)...")
+			if err := runInDevShell("cargo", "clippy", "--", "-D", "warnings"); err != nil {
+				errorMsg("Linting failed")
+				return err
+			}
+			success("Linting completed")
+			return nil
+		},
+	}
+
+	var testCmd = &cobra.Command{
+		Use:   "test",
+		Short: "Run tests",
+		Long:  "Run Rust tests for the project.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := checkNix(); err != nil {
+				errorMsg(err.Error())
+				return err
+			}
+			info("Running Rust tests...")
+			if err := runInDevShell("cargo", "test"); err != nil {
+				errorMsg("Tests failed")
+				return err
+			}
+			success("Tests completed")
+			return nil
+		},
+	}
+
+	var checkCmd = &cobra.Command{
+		Use:   "check",
+		Short: "Run all checks",
+		Long:  "Run comprehensive checks including format, lint, test, and build.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := checkNix(); err != nil {
+				errorMsg(err.Error())
+				return err
+			}
+			info("Running comprehensive checks...")
+			if err := runNix("fmt"); err != nil ||
+				runInDevShell("cargo", "clippy", "--", "-D", "warnings") != nil ||
+				runInDevShell("cargo", "test") != nil ||
+				runNix("build") != nil {
+				errorMsg("Some checks failed. Please review the output above.")
+				return fmt.Errorf("checks failed")
+			}
+			success("All checks passed!")
+			return nil
+		},
+	}
+
+	var cleanCmd = &cobra.Command{
+		Use:   "clean",
+		Short: "Clean artifacts",
+		Long:  "Clean build artifacts and temporary files.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			info("Cleaning build artifacts...")
+			targets := []string{"target/", "result", "result-*", ".cargo/"}
+			for _, target := range targets {
+				if matches, _ := filepath.Glob(target); len(matches) > 0 {
+					for _, match := range matches {
+						os.RemoveAll(match)
+					}
 				}
 			}
-			os.Exit(1)
-		}
-	case "version":
-		versionCommand()
-	case "help", "--help", "-h":
-		subcmd := ""
-		if len(args) > 0 {
-			subcmd = args[0]
-		}
-		helpCommand(subcmd)
-	default:
-		fmt.Fprintf(os.Stderr, "glot: unknown command '%s'\n", command)
-		fmt.Fprintf(os.Stderr, "Try 'glot help' for usage information.\n")
+			success("Clean completed!")
+			return nil
+		},
+	}
+
+	var updateCmd = &cobra.Command{
+		Use:   "update",
+		Short: "Update dependencies",
+		Long:  "Update both Nix flake and Cargo dependencies.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := checkNix(); err != nil {
+				errorMsg(err.Error())
+				return err
+			}
+			info("Updating dependencies...")
+			if err := runNix("flake", "update"); err != nil {
+				errorMsg("Failed to update flake dependencies")
+				return err
+			}
+			if err := runInDevShell("cargo", "update"); err != nil {
+				warning("Failed to update cargo dependencies")
+			}
+			success("Dependencies updated!")
+			return nil
+		},
+	}
+
+	var infoCmd = &cobra.Command{
+		Use:   "info",
+		Short: "Show project info",
+		Long:  "Display information about the current project.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := checkNix(); err != nil {
+				errorMsg(err.Error())
+				return err
+			}
+			fmt.Println("📋 Project Information")
+			fmt.Println("======================")
+			wd, _ := os.Getwd()
+			fmt.Printf("Working directory: %s\n", wd)
+			fmt.Println()
+			fmt.Println("Project type: rust")
+			fmt.Println()
+			fmt.Println("Flake status:")
+			if err := runNix("flake", "show"); err != nil {
+				errorMsg("Flake validation failed")
+				return err
+			} else {
+				success("Flake is valid")
+			}
+			return nil
+		},
+	}
+
+	var shellCmd = &cobra.Command{
+		Use:   "shell",
+		Short: "Enter dev environment",
+		Long:  "Enter the Nix development shell.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := checkNix(); err != nil {
+				errorMsg(err.Error())
+				return err
+			}
+			info("Entering development shell...")
+			nixCmd := exec.Command("nix", "develop")
+			nixCmd.Stdout = os.Stdout
+			nixCmd.Stderr = os.Stderr
+			nixCmd.Stdin = os.Stdin
+			if err := nixCmd.Run(); err != nil {
+				if exitError, ok := err.(*exec.ExitError); ok {
+					if status, ok := exitError.Sys().(syscall.WaitStatus); ok {
+						os.Exit(status.ExitStatus())
+					}
+				}
+				return err
+			}
+			return nil
+		},
+	}
+
+	rootCmd.AddCommand(buildCmd, runCmd, fmtCmd, lintCmd, testCmd, checkCmd, cleanCmd, updateCmd, infoCmd, shellCmd)
+
+	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
