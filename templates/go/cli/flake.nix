@@ -3,7 +3,7 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nix-polyglot.url = "github:your-org/nix-polyglot";
+    nix-polyglot.url = "github:ritzau/nix-polyglot";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
