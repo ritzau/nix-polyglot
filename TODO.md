@@ -68,7 +68,7 @@
 
 - [x] **Update templates to use glot CLI instead of justfiles** ✅
 - [x] **Add shell completion installation to project templates** ✅
-- [ ] Documentation and user guides
+- [x] **Documentation and user guides** ✅
 
 ### Completed from Original Phase 3
 
