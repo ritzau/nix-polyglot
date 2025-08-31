@@ -154,6 +154,14 @@
                 platforms = nixpkgs.lib.platforms.all;
               };
             };
+            new-cpp = {
+              type = "app";
+              program = "${templates.cpp}/bin/new-cpp-cli-project";
+              meta = {
+                description = "Create a new C++ CLI project with nix-polyglot";
+                platforms = nixpkgs.lib.platforms.all;
+              };
+            };
 
             # Explicit template apps
             new-csharp-console = {
@@ -201,6 +209,14 @@
               program = "${templates.go-cli}/bin/new-go-cli-project";
               meta = {
                 description = "Create a new Go CLI application";
+                platforms = nixpkgs.lib.platforms.all;
+              };
+            };
+            new-cpp-cli = {
+              type = "app";
+              program = "${templates.cpp-cli}/bin/new-cpp-cli-project";
+              meta = {
+                description = "Create a new C++ CLI application";
                 platforms = nixpkgs.lib.platforms.all;
               };
             };
@@ -256,6 +272,38 @@
           checks = {
             pre-commit-check = git-hooks;
           };
+
+          # Templates for nix flake new
+          templates = {
+            csharp-console = {
+              path = ./templates/csharp/console;
+              description = "C# console application with .NET SDK";
+            };
+            rust-cli = {
+              path = ./templates/rust/cli;
+              description = "Rust CLI application with Cargo";
+            };
+            python-console = {
+              path = ./templates/python/console;
+              description = "Python console application with testing";
+            };
+            nim-cli = {
+              path = ./templates/nim/cli;
+              description = "Nim CLI application with Nimble";
+            };
+            zig-cli = {
+              path = ./templates/zig/cli;
+              description = "Zig CLI application with native build";
+            };
+            go-cli = {
+              path = ./templates/go/cli;
+              description = "Go CLI application with Go modules";
+            };
+            cpp-cli = {
+              path = ./templates/cpp/cpp-cli;
+              description = "C++ CLI application with CMake";
+            };
+          };
         }
       )
     // {
@@ -267,6 +315,7 @@
         nim = import ./nim.nix { inherit nixpkgs; };
         zig = import ./zig.nix { inherit nixpkgs; };
         go = import ./go.nix { inherit nixpkgs; };
+        cpp = import ./cpp.nix { inherit nixpkgs treefmt-nix git-hooks-nix; };
 
         # Also expose standard tools and hooks for direct use
         standardTools =
