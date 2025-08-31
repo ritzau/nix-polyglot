@@ -79,7 +79,6 @@ let
     # Base CMake configuration
     cmakeFlags = [
       "-DCMAKE_CXX_STANDARD=${cppStandard}"
-      "-DCMAKE_BUILD_TYPE=Debug" # Will be overridden in release build
     ] ++ extraCmakeFlags;
 
     meta = with pkgs.lib; {
@@ -92,20 +91,17 @@ let
   devBuildConfig = baseConfig // {
     cmakeFlags = baseConfig.cmakeFlags ++ [
       "-DCMAKE_BUILD_TYPE=Debug"
-      "-DCMAKE_CXX_FLAGS=-g -O0" # Debug symbols, no optimization
     ];
     doCheck = false; # Skip tests for speed
 
-    # Minimal environment for fast iteration
-    NIX_CFLAGS_COMPILE = "-DDEBUG_BUILD=1";
+    # Minimal environment for fast iteration - use NIX flags for compiler flags
+    NIX_CFLAGS_COMPILE = "-DDEBUG_BUILD=1 -g -O0";
   };
 
   # Reproducible release build - deterministic output
   releaseBuildConfig = baseConfig // {
     cmakeFlags = baseConfig.cmakeFlags ++ [
       "-DCMAKE_BUILD_TYPE=Release"
-      "-DCMAKE_CXX_FLAGS=-O2 -DNDEBUG" # Optimized, no debug symbols
-      "-DCMAKE_C_FLAGS=-O2 -DNDEBUG"
     ];
     doCheck = enableTests; # Run all tests
 
@@ -118,7 +114,8 @@ let
       DETERMINISTIC_BUILD = "true";
     };
 
-    NIX_CFLAGS_COMPILE = "-DRELEASE_BUILD=1";
+    # Use NIX flags for compiler flags, not CMake flags
+    NIX_CFLAGS_COMPILE = "-DRELEASE_BUILD=1 -O2 -DNDEBUG";
   };
 
   # Dev build - fast iteration with debug info
