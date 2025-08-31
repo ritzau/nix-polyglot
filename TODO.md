@@ -1,80 +1,59 @@
 # Glot CLI Implementation TODO
 
-## 🎉 **FINAL STATUS: ALL CORE PHASES COMPLETE!** ✅
+## Phase 4: Examples Repository & Language Expansion 🚧 IN PROGRESS
 
-**Latest Completion (August 30, 2025):**
+### Current Tasks (August 31, 2025)
 
-- ✅ **Template System Modernization Complete**
-- ✅ **All templates now use glot CLI instead of justfiles**
-- ✅ **Smart .envrc files with automatic glot CLI caching**
-- ✅ **Shell completion auto-installation in all templates**
-- ✅ **Updated help text and user guidance**
-- ✅ **Fixed template path resolution for local development**
+**GitHub Issues Integration**: ✅ All tasks now tracked as GitHub Issues for better project management
 
-**Summary:** The glot CLI system is now production-ready with complete template integration, automatic tooling setup, and seamless user experience across all supported languages (Rust, Python, C#).
+- [x] Research GitHub Issues API integration for task management
+- [x] Clean up completed phases from TODO.md
+- [🚧] Create glot-examples repository next to samples directory → [Issue #1](https://github.com/ritzau/nix-polyglot/issues/1)
+- [ ] Initialize git repository in glot-examples with proper structure → [Issue #1](https://github.com/ritzau/nix-polyglot/issues/1)
+- [ ] Copy existing samples (rust, python, csharp) to glot-examples subdirectories → [Issue #1](https://github.com/ritzau/nix-polyglot/issues/1)
+- [ ] Create root flake.nix in glot-examples to build all examples → [Issue #1](https://github.com/ritzau/nix-polyglot/issues/1)
+- [ ] Add Nim language support following nixpkgs guidelines → [Issue #2](https://github.com/ritzau/nix-polyglot/issues/2)
+- [ ] Add Zig language support following nixpkgs guidelines → [Issue #3](https://github.com/ritzau/nix-polyglot/issues/3)
+- [ ] Add Go language support following nixpkgs guidelines → [Issue #4](https://github.com/ritzau/nix-polyglot/issues/4)
+- [ ] Update documentation to reflect new examples and language support → [Issue #5](https://github.com/ritzau/nix-polyglot/issues/5)
+
+### Future Language Support Pipeline
+
+Languages to implement following https://nixos.org/manual/nixpkgs/stable/#chap-language-support:
+
+- [ ] Nim - Static typed systems language
+- [ ] Zig - Low-level systems language
+- [ ] Go - Concurrent programming language
+
+### Implementation Strategy
+
+1. **Repository Structure**: Create separate glot-examples repo for community samples
+2. **Language Integration**: Follow nixpkgs language support patterns for each new language
+3. **Template Creation**: Create glot CLI templates for each new language
+4. **Root Flake**: Unified build system for all examples
+5. **Documentation**: Update guides to include new languages and examples
 
 ---
 
-## Phase 1: Core Implementation for Rust
+## ✅ COMPLETED PHASES (Phase 1-3)
 
-### Status Legend
+### Phase 1: Core Implementation ✅ COMPLETE
 
-- [ ] todo
-- [x] done
-- [🚧] in progress
-- [🚫] blocked
-- [⏭️] skipped
+- Go-based glot CLI implementation (~200 lines)
+- Template system integration
+- Smart caching with automatic version synchronization
 
-### Current Tasks
+### Phase 2: Enhanced Features ✅ COMPLETE
 
-- [x] Create TODO.md file in nix-polyglot repo for glot CLI implementation
-- [x] Create .nix-polyglot/glot.bash implementation file
-- [x] Update rust-nix sample with simple .envrc that sources glot.bash
-- [x] Create install-hooks nix app for git hook management
-- [x] Test basic glot commands in rust-nix sample
-- [x] Verify git hooks work properly with new setup
+- Shell completion system (bash/zsh/fish)
+- Version management and upgrade system
+- Cross-platform binary with proper error handling
 
-## Phase 2: Enhanced Script Features ✅ COMPLETED + EXCEEDED
+### Phase 3: Multi-Language Support ✅ COMPLETE
 
-### Completed Tasks
-
-- [x] Add completion generation system to glot script
-- [x] Implement `glot completion bash|zsh|fish` command
-- [x] Add `glot install-completions` for automatic shell setup
-- [x] Add `glot version` command showing glot and project versions
-- [x] Add `glot upgrade-glot` command for updating glot implementation
-- [x] Test completion system across bash/zsh shells
-- [x] Add error handling and better user feedback
-
-### MAJOR UPGRADES (Beyond Original Plan)
-
-- [x] **Migrated from 580+ line bash script to ~200 line Go implementation**
-- [x] **Central distribution via nix-polyglot packages**
-- [x] **Smart caching with automatic version synchronization**
-- [x] **Simplified CLI interface** (`--release` flag instead of `--variant debug|release`)
-- [x] **Cross-platform binary with ~5ms execution time**
-- [x] **Proper error handling with colored output**
-
-## Phase 3: Extended Commands & Multi-Language Support ✅ CORE COMPLETED
-
-### Completed Tasks
-
-- [x] **Extend glot to python-nix sample** ✅
-- [x] **Extend glot to csharp-nix sample** ✅
-- [x] **Remove justfiles from all samples** ✅
-- [x] **Update test scripts to integrate glot CLI** ✅
-
-### Remaining Tasks ✅ ALL COMPLETED
-
-- [x] **Update templates to use glot CLI instead of justfiles** ✅
-- [x] **Add shell completion installation to project templates** ✅
-- [x] **Documentation and user guides** ✅
-
-### Completed from Original Phase 3
-
-- [x] ~~Add variant support improvements~~ (Simplified to --release flag)
-- [x] **Implement `glot new [template] [name]` with template discovery** ✅
-- [x] **Create unified template system integration** ✅
+- Template system modernization (replaced justfiles)
+- Complete documentation suite (User Guide, API Reference, FAQ, Developer Guide)
+- Future directions specifications (cross-compilation, language extensions)
 
 ### Optional Future Enhancements
 

@@ -78,10 +78,14 @@ in
   # Python templates
   python-console = mkTemplateFromDir ../templates/python/console;
 
+  # Nim templates
+  nim-cli = mkTemplateFromDir ../templates/nim/cli;
+
   # Legacy aliases for backward compatibility
   csharp = mkTemplateFromDir ../templates/csharp/console;
   rust = mkTemplateFromDir ../templates/rust/cli;
   python = mkTemplateFromDir ../templates/python/console;
+  nim = mkTemplateFromDir ../templates/nim/cli;
 
   # Template listing helper
   listTemplates = pkgs.writeShellApplication {
@@ -101,13 +105,19 @@ in
       echo "    python         - Python console application with Poetry"
       echo "    python-console - Python console application (explicit)"
       echo ""
+      echo "  Nim Templates:"
+      echo "    nim            - Nim CLI application"
+      echo "    nim-cli        - Nim CLI application (explicit)"
+      echo ""
       echo "Usage:"
       echo "  nix run nix-polyglot#new-csharp myproject"
       echo "  nix run nix-polyglot#new-rust myproject"
       echo "  nix run nix-polyglot#new-python myproject"
+      echo "  nix run nix-polyglot#new-nim myproject"
       echo "  nix run nix-polyglot#new-csharp-console myproject"
       echo "  nix run nix-polyglot#new-rust-cli myproject"
       echo "  nix run nix-polyglot#new-python-console myproject"
+      echo "  nix run nix-polyglot#new-nim-cli myproject"
       echo ""
       echo "Each template includes:"
       echo "  • Complete flake.nix with nix-polyglot integration"
