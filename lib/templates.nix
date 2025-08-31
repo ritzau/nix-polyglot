@@ -81,11 +81,19 @@ in
   # Nim templates
   nim-cli = mkTemplateFromDir ../templates/nim/cli;
 
+  # Zig templates
+  zig-cli = mkTemplateFromDir ../templates/zig/cli;
+
+  # Go templates
+  go-cli = mkTemplateFromDir ../templates/go/cli;
+
   # Legacy aliases for backward compatibility
   csharp = mkTemplateFromDir ../templates/csharp/console;
   rust = mkTemplateFromDir ../templates/rust/cli;
   python = mkTemplateFromDir ../templates/python/console;
   nim = mkTemplateFromDir ../templates/nim/cli;
+  zig = mkTemplateFromDir ../templates/zig/cli;
+  go = mkTemplateFromDir ../templates/go/cli;
 
   # Template listing helper
   listTemplates = pkgs.writeShellApplication {
@@ -109,15 +117,27 @@ in
       echo "    nim            - Nim CLI application"
       echo "    nim-cli        - Nim CLI application (explicit)"
       echo ""
+      echo "  Zig Templates:"
+      echo "    zig            - Zig CLI application"
+      echo "    zig-cli        - Zig CLI application (explicit)"
+      echo ""
+      echo "  Go Templates:"
+      echo "    go             - Go CLI application"
+      echo "    go-cli         - Go CLI application (explicit)"
+      echo ""
       echo "Usage:"
       echo "  nix run nix-polyglot#new-csharp myproject"
       echo "  nix run nix-polyglot#new-rust myproject"
       echo "  nix run nix-polyglot#new-python myproject"
       echo "  nix run nix-polyglot#new-nim myproject"
+      echo "  nix run nix-polyglot#new-zig myproject"
+      echo "  nix run nix-polyglot#new-go myproject"
       echo "  nix run nix-polyglot#new-csharp-console myproject"
       echo "  nix run nix-polyglot#new-rust-cli myproject"
       echo "  nix run nix-polyglot#new-python-console myproject"
       echo "  nix run nix-polyglot#new-nim-cli myproject"
+      echo "  nix run nix-polyglot#new-zig-cli myproject"
+      echo "  nix run nix-polyglot#new-go-cli myproject"
       echo ""
       echo "Each template includes:"
       echo "  • Complete flake.nix with nix-polyglot integration"

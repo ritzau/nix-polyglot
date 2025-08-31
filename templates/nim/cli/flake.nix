@@ -19,12 +19,14 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
 
-        nimLib = nix-polyglot.lib.nim;
-
-        project = nimLib {
-          inherit pkgs self;
-          binaryName = "nim-project";
-        };
+        project = nix-polyglot.lib.nim
+          {
+            inherit nixpkgs;
+          }
+          {
+            inherit pkgs self;
+            binaryName = "nim-project";
+          };
 
       in
       project.defaultOutputs // {

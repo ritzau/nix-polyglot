@@ -138,6 +138,22 @@
                 platforms = nixpkgs.lib.platforms.all;
               };
             };
+            new-zig = {
+              type = "app";
+              program = "${templates.zig}/bin/new-zig-cli-project";
+              meta = {
+                description = "Create a new Zig CLI project with nix-polyglot";
+                platforms = nixpkgs.lib.platforms.all;
+              };
+            };
+            new-go = {
+              type = "app";
+              program = "${templates.go}/bin/new-go-cli-project";
+              meta = {
+                description = "Create a new Go CLI project with nix-polyglot";
+                platforms = nixpkgs.lib.platforms.all;
+              };
+            };
 
             # Explicit template apps
             new-csharp-console = {
@@ -169,6 +185,22 @@
               program = "${templates.nim-cli}/bin/new-nim-cli-project";
               meta = {
                 description = "Create a new Nim CLI application";
+                platforms = nixpkgs.lib.platforms.all;
+              };
+            };
+            new-zig-cli = {
+              type = "app";
+              program = "${templates.zig-cli}/bin/new-zig-cli-project";
+              meta = {
+                description = "Create a new Zig CLI application";
+                platforms = nixpkgs.lib.platforms.all;
+              };
+            };
+            new-go-cli = {
+              type = "app";
+              program = "${templates.go-cli}/bin/new-go-cli-project";
+              meta = {
+                description = "Create a new Go CLI application";
                 platforms = nixpkgs.lib.platforms.all;
               };
             };
@@ -233,6 +265,8 @@
         rust = import ./rust.nix { inherit nixpkgs; };
         python = import ./python.nix { inherit nixpkgs treefmt-nix git-hooks-nix; };
         nim = import ./nim.nix { inherit nixpkgs; };
+        zig = import ./zig.nix { inherit nixpkgs; };
+        go = import ./go.nix { inherit nixpkgs; };
 
         # Also expose standard tools and hooks for direct use
         standardTools =

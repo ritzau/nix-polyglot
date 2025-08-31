@@ -30,6 +30,12 @@ detect_project_type() {
         echo "rust"
     elif [[ -f "pyproject.toml" ]] || [[ -f "setup.py" ]] || grep -q "python" flake.nix 2>/dev/null; then
         echo "python"
+    elif ls *.nimble >/dev/null 2>&1 || [[ -f "config.nims" ]] || grep -q "nim" flake.nix 2>/dev/null; then
+        echo "nim"
+    elif [[ -f "build.zig" ]] || grep -q "zig" flake.nix 2>/dev/null; then
+        echo "zig"
+    elif [[ -f "go.mod" ]] || grep -q "go" flake.nix 2>/dev/null; then
+        echo "go"
     else
         echo "unknown"
     fi
@@ -47,6 +53,15 @@ get_expected_output() {
             ;;
         "python")
             echo "Hello, World from Python!"
+            ;;
+        "nim")
+            echo "Hello"
+            ;;
+        "zig")
+            echo "Hello"
+            ;;
+        "go")
+            echo "Hello"
             ;;
         *)
             echo "Hello"
@@ -66,6 +81,15 @@ get_dev_tools() {
             ;;
         "python")
             echo "python"
+            ;;
+        "nim")
+            echo "nim"
+            ;;
+        "zig")
+            echo "zig"
+            ;;
+        "go")
+            echo "go"
             ;;
         *)
             echo "fastfetch"  # fallback to common tool

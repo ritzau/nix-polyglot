@@ -7,7 +7,6 @@ Complete documentation for the glot CLI tool and nix-polyglot integration.
 ### For Users
 
 - **[User Guide](USER_GUIDE.md)** - Complete guide to using glot CLI
-
   - Quick start and installation
   - Core commands and workflows
   - Language-specific features
@@ -15,7 +14,6 @@ Complete documentation for the glot CLI tool and nix-polyglot integration.
   - Best practices and troubleshooting
 
 - **[API Reference](API_REFERENCE.md)** - Detailed command reference
-
   - Complete command syntax and options
   - Exit codes and error handling
   - Environment variables

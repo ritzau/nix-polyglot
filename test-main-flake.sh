@@ -160,10 +160,10 @@ test_templates() {
     echo -e "${YELLOW}🎯 TEMPLATE SYSTEM TESTS${NC}"
     echo "$(printf '%.0s-' {1..50})"
     
-    # Test template apps are available (2 C#, 2 Rust, 2 Python = 6 template apps)
+    # Test template apps are available (2 C#, 2 Rust, 2 Python, 2 Nim, 2 Zig, 2 Go = 12 template apps)
     run_test "template apps available" \
         "nix eval .#apps.x86_64-darwin --apply 'apps: builtins.length (builtins.attrNames (builtins.removeAttrs apps [\"templates\" \"setup\" \"update-project\" \"migrate\" \"format-templates\"]))' 2>/dev/null" \
-        "6"
+        "12"
     
     run_test "template listing works" \
         "nix run .#templates 2>/dev/null | head -1" \
@@ -171,9 +171,12 @@ test_templates() {
     
     # Test main template variants (quick validation)
     local repo_root="$(pwd)"
-    test_template_generation "csharp-console" "new-csharp" "flake.nix,Program.cs,MyApp.csproj,justfile" "$repo_root"
-    test_template_generation "rust-cli" "new-rust" "flake.nix,src/main.rs,Cargo.toml,Cargo.lock,justfile" "$repo_root"
-    test_template_generation "python-console" "new-python" "flake.nix,pyproject.toml,myapp/main.py,justfile" "$repo_root"
+    test_template_generation "csharp-console" "new-csharp" "flake.nix,Program.cs,MyApp.csproj" "$repo_root"
+    test_template_generation "rust-cli" "new-rust" "flake.nix,src/main.rs,Cargo.toml,Cargo.lock" "$repo_root"
+    test_template_generation "python-console" "new-python" "flake.nix,pyproject.toml,myapp/main.py" "$repo_root"
+    test_template_generation "nim-cli" "new-nim" "flake.nix,src/main.nim,nim_project.nimble" "$repo_root"
+    test_template_generation "zig-cli" "new-zig" "flake.nix,src/main.zig,build.zig" "$repo_root"
+    test_template_generation "go-cli" "new-go" "flake.nix,main.go,go.mod" "$repo_root"
     
     # Verify explicit variants are available
     run_test "explicit csharp template available" \
@@ -186,6 +189,18 @@ test_templates() {
     
     run_test "explicit python template available" \
         "nix eval .#apps.x86_64-darwin.new-python-console 2>/dev/null >/dev/null && echo 'AVAILABLE'" \
+        "AVAILABLE"
+    
+    run_test "explicit nim template available" \
+        "nix eval .#apps.x86_64-darwin.new-nim-cli 2>/dev/null >/dev/null && echo 'AVAILABLE'" \
+        "AVAILABLE"
+    
+    run_test "explicit zig template available" \
+        "nix eval .#apps.x86_64-darwin.new-zig-cli 2>/dev/null >/dev/null && echo 'AVAILABLE'" \
+        "AVAILABLE"
+    
+    run_test "explicit go template available" \
+        "nix eval .#apps.x86_64-darwin.new-go-cli 2>/dev/null >/dev/null && echo 'AVAILABLE'" \
         "AVAILABLE"
 }
 
@@ -245,6 +260,18 @@ main() {
 
     run_test "python lib loadable" \
         "nix eval --impure --expr 'let nixpkgs = import <nixpkgs> {}; python = import ./python.nix { inherit nixpkgs; treefmt-nix = null; git-hooks-nix = null; }; in \"loadable\"' 2>/dev/null" \
+        "loadable"
+
+    run_test "nim lib loadable" \
+        "nix eval --impure --expr 'let nixpkgs = import <nixpkgs> {}; nim = import ./nim.nix { inherit nixpkgs; }; in \"loadable\"' 2>/dev/null" \
+        "loadable"
+
+    run_test "zig lib loadable" \
+        "nix eval --impure --expr 'let nixpkgs = import <nixpkgs> {}; zig = import ./zig.nix { inherit nixpkgs; }; in \"loadable\"' 2>/dev/null" \
+        "loadable"
+
+    run_test "go lib loadable" \
+        "nix eval --impure --expr 'let nixpkgs = import <nixpkgs> {}; go = import ./go.nix { inherit nixpkgs; }; in \"loadable\"' 2>/dev/null" \
         "loadable"
 
     echo ""
